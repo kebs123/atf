@@ -1,0 +1,6 @@
+# Local SQLite database files
+data/*.db
+data/*.db-*
+
+# Prisma generated client
+src/generated
