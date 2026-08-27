@@ -8,6 +8,10 @@ async function main(): Promise<void> {
   const app = createApp();
   app.listen(env.port, () => {
     console.log(`Kebs API listening on http://localhost:${env.port}`);
+    if (env.publicApiUrl) {
+      console.log(`Public URL: ${env.publicApiUrl}`);
+      console.log(`SMS webhook: ${env.publicApiUrl}/webhooks/sms`);
+    }
   });
 }
 

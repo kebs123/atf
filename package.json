@@ -1,0 +1,24 @@
+{
+  "name": "atf",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kebs product authenticity monorepo",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @atf/api",
+    "dev:tunnel": "npm run dev:tunnel --workspace @atf/api",
+    "tunnel": "npm run tunnel --workspace @atf/api",
+    "build": "npm run build --workspace @atf/api",
+    "start": "npm run start --workspace @atf/api",
+    "typecheck": "npm run typecheck --workspace @atf/api",
+    "db:generate": "npm run db:generate --workspace @atf/api",
+    "db:migrate": "npm run db:migrate --workspace @atf/api",
+    "db:push": "npm run db:push --workspace @atf/api",
+    "db:studio": "npm run db:studio --workspace @atf/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

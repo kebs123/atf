@@ -268,8 +268,35 @@ Password hashed (e.g. bcrypt/argon2). Default role `manufacturer`, `company.stat
 | `SMS_SHORTCODE` | Printed on packs and in replies |
 | `PUBLIC_VERIFY_URL` | For QR: `https://…/verify` |
 | `JWT_SECRET` or session secret | Auth |
+| `TRUST_PROXY` | Trusted reverse-proxy hops (0 = none). Must be ≥1 behind a tunnel/nginx or the per-IP rate limits in §3 all share one bucket |
 
 Never put these in Next.js public env.
+
+**Where they are read from:** `apps/api/.env` first, then the repo-root `.env` as a shared fallback (per-app values win). Paths are resolved relative to `apps/api`, not the shell's cwd, so `npm run dev` behaves the same from the repo root or from `apps/api`.
+
+---
+
+## 9b. Public URL for local dev (SMS webhook)
+
+The gateway cannot reach `localhost`, so development needs a tunnel. `apps/api/scripts/dev-tunnel.mjs` opens one, prints the URL, then starts the dev server:
+
+```bash
+cd apps/api
+npm run dev:tunnel      # tunnel + server
+npm run tunnel          # tunnel only (server already running elsewhere)
+```
+
+Both work from the repo root too (`npm run dev:tunnel`) — the root package is an npm workspace that forwards to `@atf/api`.
+
+It prints a banner with the public URL, `…/webhooks/sms` (paste into the Africa's Talking callback field), `…/verify`, and `…/health`, and passes `PUBLIC_API_URL` (shown in the server's startup log) plus `TRUST_PROXY=1` (so per-IP rate limits see the real client IP, not the tunnel's `127.0.0.1`) to the server.
+
+| Setting | Meaning |
+| --- | --- |
+| `TUNNEL_PROVIDER` | `cloudflare`, `ngrok`, or `auto` (default: cloudflared if installed, else ngrok) |
+| `--provider=ngrok` | Override the provider for one run |
+| `NGROK_DOMAIN` | Use a reserved ngrok domain so the URL survives restarts |
+
+Quick tunnel URLs are **random on every restart** — re-paste the webhook URL each session, or use a reserved ngrok domain / named Cloudflare tunnel. Requires `cloudflared` or `ngrok` on `PATH`; the script says how to install if neither is found. Ctrl+C stops both processes.
 
 ---
 
