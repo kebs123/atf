@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { ThemeToggle } from "./ThemeToggle";
 
 interface NavigationProps {
   variant?: "default" | "dark";
@@ -86,7 +85,11 @@ const Navigation = ({
                 Verify a Product
               </Button>
             </Link>
-            <ThemeToggle className={isDark || !isScrolled ? "text-white hover:text-white" : ""} />
+            <Link to="/login">
+              <Button size="sm" className="rounded-full text-[11px] uppercase tracking-wider font-normal px-5">
+                Sign up / Log in
+              </Button>
+            </Link>
           </div>
 
           <button className={`md:hidden ${isMobileMenuOpen || isDark || !isScrolled ? "text-white" : "text-foreground"}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -118,9 +121,11 @@ const Navigation = ({
                 Verify a Product
               </Button>
             </Link>
-            <div className="mt-3">
-              <ThemeToggle className={isDark || !isScrolled ? "text-white hover:text-white" : ""} />
-            </div>
+            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
+              <Button className="w-full mt-3 rounded-full text-[11px] uppercase tracking-wider font-normal px-5">
+                Sign up / Log in
+              </Button>
+            </Link>
           </motion.div>}
       </AnimatePresence>
       </div>

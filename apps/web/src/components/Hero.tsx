@@ -6,18 +6,33 @@ import { Link } from "react-router-dom";
 const slides = [
   {
     image:
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1920&q=80",
-    alt: "Pharmacy shelf of medicines a shopper might need to verify",
+      "https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=1600&q=75",
+    alt: "Personal care products arranged for sale",
   },
   {
     image:
-      "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1920&q=80",
-    alt: "Customer at a shop counter with a phone",
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1600&q=75",
+    alt: "Automotive parts and vehicle components",
   },
   {
     image:
-      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1920&q=80",
-    alt: "Person checking a product on a mobile phone",
+      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1600&q=75",
+    alt: "Construction materials and building work",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1605540436563-5bca919ae766?auto=format&fit=crop&w=1600&q=75",
+    alt: "Fuel pump at a petroleum station",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=75",
+    alt: "Fresh food and drinks arranged in a market",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1600&q=75",
+    alt: "Bottles of wine representing alcoholic beverages",
   },
 ];
 
@@ -67,6 +82,9 @@ const Hero = () => {
             alt={slides[currentSlide].alt}
             width={1280}
             height={720}
+            loading={currentSlide === 0 ? "eager" : "lazy"}
+            fetchPriority={currentSlide === 0 ? "high" : "auto"}
+            decoding="async"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/40" />
