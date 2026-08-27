@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { smsHint } from "@/lib/config";
 
 const slides = [
   {
@@ -117,7 +118,7 @@ const Hero = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-4 max-w-sm text-sm text-white/80 font-light"
         >
-          SMS VERO &lt;code&gt; to 20880 from any phone. No app. No data.
+          {smsHint()} from any phone. No app. No data.
         </motion.p>
 
         <motion.div
@@ -127,7 +128,7 @@ const Hero = () => {
         >
           <Link
             to="/verify"
-            className="mt-6 inline-flex items-center gap-3 bg-white text-foreground px-6 py-3 rounded-full text-sm tracking-wide hover:bg-white/90 transition-colors"
+            className="mt-6 inline-flex items-center gap-3 bg-white text-zinc-900 px-6 py-3 rounded-full text-sm tracking-wide hover:bg-white/90 transition-colors"
           >
             Verify a Product
             <ArrowRight className="w-4 h-4" />

@@ -4,19 +4,26 @@ import { AppShell } from "@/components/dash/AppShell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { ADMIN_VERIFICATIONS, resultClass, resultLabel } from "@/lib/demo-data";
+import { useLive } from "@/hooks/use-live";
+import { listAdminVerifications } from "@/lib/api";
+import { resultClass, resultLabel } from "@/lib/results";
 import { ADMIN_NAV } from "@/lib/nav";
 
 const Verifications = () => {
   const session = useAuth();
   const [q, setQ] = useState("");
+  const { data, error, loading } = useLive(() => listAdminVerifications());
   const rows = useMemo(() => {
+    const all = data ?? [];
     const needle = q.trim().toLowerCase();
-    if (!needle) return ADMIN_VERIFICATIONS;
-    return ADMIN_VERIFICATIONS.filter(
-      (v) => v.code.toLowerCase().includes(needle) || v.company.toLowerCase().includes(needle) || v.result.includes(needle),
+    if (!needle) return all;
+    return all.filter(
+      (v) =>
+        v.code.toLowerCase().includes(needle) ||
+        v.company.toLowerCase().includes(needle) ||
+        v.result.includes(needle),
     );
-  }, [q]);
+  }, [data, q]);
 
   if (!session) return <Navigate to="/login" replace />;
 
@@ -24,7 +31,8 @@ const Verifications = () => {
     <AppShell session={session} items={ADMIN_NAV}>
       <div className="max-w-5xl">
         <h1 className="text-2xl font-light tracking-tight">Verifications</h1>
-        <p className="text-sm text-muted-foreground mt-1">Searchable log. Demo data until GET /admin/verifications exists.</p>
+        <p className="text-sm text-muted-foreground mt-1">Searchable log from the live API.</p>
+        {error && <p className="text-sm text-destructive mt-4">{error}</p>}
         <div className="mt-6 max-w-sm space-y-2">
           <Label htmlFor="q" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
             Search
@@ -43,6 +51,16 @@ const Verifications = () => {
               </tr>
             </thead>
             <tbody>
+              {loading && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>Loading…</td>
+                </tr>
+              )}
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>No matching checks.</td>
+                </tr>
+              )}
               {rows.map((v) => (
                 <tr key={v.id} className="border-t border-border">
                   <td className="px-4 py-3 font-mono text-xs">{v.code}</td>

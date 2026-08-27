@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { CATEGORIES, categoryLabel, type CategoryId } from "@/lib/categories";
-import { CATEGORY_COLORS, categoryTotals } from "@/lib/demo-data";
+import { CATEGORY_COLORS, categoryTotals } from "@/lib/results";
 import { cn } from "@/lib/utils";
 
 type Row = { day: string; values: Record<CategoryId, number> };
@@ -33,6 +33,13 @@ export function AnalyticsBoard({
   const totals = categoryTotals(series);
   const grand = Object.values(totals).reduce((a, b) => a + b, 0);
   const hoverRow = hover !== null ? series[hover] : series[series.length - 1];
+  if (!series.length || !hoverRow) {
+    return (
+      <section className="mt-10">
+        <p className="text-sm text-muted-foreground">No daily series from the API yet.</p>
+      </section>
+    );
+  }
   const hoverSum = keys.reduce((acc, k) => acc + hoverRow.values[k], 0);
 
   return (

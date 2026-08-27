@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, XCircle, AlertTriangle, Smartphone, ShieldCheck } from "lucide-react";
+import { smsHint } from "@/lib/config";
 
 const CATEGORY_DURATION = 5000; // 5 seconds per category
 
@@ -35,7 +36,7 @@ const categories = [
       // Updated Engine Oil photo
       image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=800&q=80",
       marks: [
-        "Interactive 20880 SMS verification code on neck label",
+        "Interactive SMS verification code on neck label",
         "Intact holographic security seal",
         "Molded brand logo stamped on bottle bottom"
       ],
@@ -103,7 +104,7 @@ const categories = [
       image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80",
       marks: [
         "National Food Fortification logo (Vitamin A)",
-        "SMS verification sticker registered on 20880",
+        "SMS verification sticker registered on the short code",
         "Crisp expiration date stamp on container body"
       ],
     },
@@ -165,17 +166,17 @@ const Tagline = () => {
   const activeCategory = categories.find((c) => c.id === activeTab) || categories[0];
 
   return (
-    <section className="bg-foreground text-background py-16 md:py-24 overflow-hidden">
+    <section className="bg-muted/40 text-foreground py-16 md:py-24 overflow-hidden">
       <div className="container mx-auto px-6 lg:px-12">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs tracking-widest uppercase mb-4 text-emerald-400">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-xs tracking-widest uppercase mb-4 text-primary">
             <ShieldCheck className="w-4 h-4" /> Market Verification
           </span>
           <h2 className="text-3xl md:text-4xl font-light tracking-tight">
             Spotting Counterfeits in Kenya
           </h2>
-          <p className="mt-3 text-sm text-background/70">
+          <p className="mt-3 text-sm text-muted-foreground">
             Compare genuine KEBS-compliant items against common illicit market fakes.
           </p>
         </div>
@@ -188,8 +189,8 @@ const Tagline = () => {
               onClick={() => setActiveTab(cat.id)}
               className={`relative px-4 py-2 rounded-full text-xs md:text-sm transition-all duration-300 cursor-pointer overflow-hidden ${
                 activeTab === cat.id
-                  ? "bg-white text-black font-medium shadow-lg scale-105"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-primary text-primary-foreground font-medium shadow-lg scale-105"
+                  : "bg-secondary text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <span className="relative z-10">{cat.name}</span>
@@ -208,7 +209,7 @@ const Tagline = () => {
             className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto"
           >
             {/* REAL PRODUCT CARD */}
-            <div className="relative rounded-2xl bg-white/5 border border-emerald-500/30 overflow-hidden p-6 flex flex-col justify-between">
+            <div className="relative rounded-2xl bg-card border border-emerald-500/30 overflow-hidden p-6 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">
@@ -229,7 +230,7 @@ const Tagline = () => {
                 </div>
                 <ul className="space-y-2.5">
                   {activeCategory.real.marks.map((mark, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-background/90">
+                    <li key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-foreground/90">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <span>{mark}</span>
                     </li>
@@ -239,7 +240,7 @@ const Tagline = () => {
             </div>
 
             {/* FAKE PRODUCT CARD */}
-            <div className="relative rounded-2xl bg-white/5 border border-rose-500/30 overflow-hidden p-6 flex flex-col justify-between">
+            <div className="relative rounded-2xl bg-card border border-rose-500/30 overflow-hidden p-6 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-400 text-xs font-semibold">
@@ -260,7 +261,7 @@ const Tagline = () => {
                 </div>
                 <ul className="space-y-2.5">
                   {activeCategory.fake.marks.map((mark, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-background/70">
+                    <li key={i} className="flex items-start gap-2.5 text-xs md:text-sm text-muted-foreground">
                       <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                       <span>{mark}</span>
                     </li>
@@ -273,9 +274,9 @@ const Tagline = () => {
 
         {/* SMS Verification Prompt Divider */}
         <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 bg-white/10 px-5 py-2.5 rounded-full text-xs md:text-sm text-white/90">
+          <div className="inline-flex items-center gap-3 bg-secondary px-5 py-2.5 rounded-full text-xs md:text-sm text-foreground">
             <Smartphone className="w-4 h-4 text-emerald-400" />
-            <span>SMS <strong>KEBS &lt;Code&gt;</strong> to <strong>20880</strong> to verify any product in Kenya instantly</span>
+            <span>{smsHint()} to verify any product in Kenya instantly</span>
           </div>
         </div>
 
@@ -285,7 +286,7 @@ const Tagline = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.7 }}
-          className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-center max-w-4xl mx-auto text-balance border-t border-white/10 pt-12 mt-12"
+          className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-center max-w-4xl mx-auto text-balance border-t border-border pt-12 mt-12"
         >
           "Every day, thousands of Africans unknowingly buy fake personal care, drinks, building materials, and auto parts—Vero stops this by letting anyone, even with a basic phone, instantly verify a product's authenticity via SMS before it reaches their hands."
         </motion.p>

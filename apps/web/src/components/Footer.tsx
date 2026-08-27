@@ -137,11 +137,11 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
 }
 
 export const Footer = ({
-  headingLines = ["KEBS AFRICA"],
+  headingLines = ["VERO"],
   leftImage = "https://images.unsplash.com/photo-1595079672139-cee25815d088?auto=format&fit=crop&w=600&q=80",
   rightImage = "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=600&q=80",
-  background = "#0f0f0f",
-  textColor = "#ffffff",
+  background,
+  textColor,
   charColor = "#10b981",
   hoverColor = "#34d399",
   hoverCharColor = "#0f0f0f",
@@ -383,7 +383,7 @@ export const Footer = ({
     <footer
       ref={rootRef}
       className={cn(
-        "relative min-h-[480px] w-full overflow-hidden bg-foreground text-background pt-16 pb-28",
+        "relative min-h-[480px] w-full overflow-hidden bg-card text-foreground border-t border-border pt-16 pb-28",
         className
       )}
       style={{ backgroundColor: background, color: textColor, containerType: "inline-size" }}
@@ -412,9 +412,9 @@ export const Footer = ({
           <div>
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck className="h-5 w-5 text-emerald-400" />
-              <span className="text-base font-semibold tracking-wide">Kebs</span>
+              <span className="text-base font-semibold tracking-wide">Vero</span>
             </div>
-            <p className="text-background/70 text-xs font-light leading-relaxed max-w-xs">
+            <p className="text-muted-foreground text-xs font-light leading-relaxed max-w-xs">
               Protecting African consumers from counterfeit products with instant SMS and web verification.
             </p>
           </div>
@@ -423,23 +423,33 @@ export const Footer = ({
             <h4 className="text-sm font-medium mb-4 text-emerald-400">Pages</h4>
             <ul className="grid grid-cols-2 gap-x-8 gap-y-3">
               <li>
-                <Link to="/" className="text-background/70 hover:text-white transition-colors text-xs font-light">
+                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/verify" className="text-background/70 hover:text-white transition-colors text-xs font-light">
+                <Link to="/verify" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
                   Verify
                 </Link>
               </li>
               <li>
-                <a href="/#how-it-works" className="text-background/70 hover:text-white transition-colors text-xs font-light">
+                <Link to="/report" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
+                  Report a fake
+                </Link>
+              </li>
+              <li>
+                <a href="/#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
                   How it works
                 </a>
               </li>
               <li>
-                <Link to="/login" className="text-background/70 hover:text-background smooth-hover text-xs font-light">
-                  Staff sign in
+                <Link to="/signup" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
+                  Sign up
+                </Link>
+              </li>
+              <li>
+                <Link to="/login" className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light">
+                  Log in
                 </Link>
               </li>
             </ul>
@@ -449,18 +459,18 @@ export const Footer = ({
             <h4 className="text-sm font-medium mb-4 text-emerald-400">Contact Us</h4>
             <div className="flex flex-col gap-2">
               <a
-                href="mailto:hello@kebs.africa"
-                className="text-background/70 hover:text-white transition-colors text-xs font-light flex items-center gap-2"
+                href="mailto:hello@vero.africa"
+                className="text-muted-foreground hover:text-foreground transition-colors text-xs font-light flex items-center gap-2"
               >
                 <Mail className="h-3.5 w-3.5" />
-                hello@kebs.africa
+                hello@vero.africa
               </a>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-background/20 pt-8 text-center text-background/50 text-xs font-light">
-          <p>&copy; 2026 Kebs. All rights reserved.</p>
+        <div className="border-t border-border pt-8 text-center text-muted-foreground text-xs font-light">
+          <p>&copy; 2026 Vero. All rights reserved.</p>
         </div>
       </div>
 

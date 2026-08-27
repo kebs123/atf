@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { homeFor, login } from "@/lib/auth";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { enterLocalDashboard, homeFor, login, type Session } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Login = () => {
   const session = useAuth();
@@ -19,66 +18,72 @@ const Login = () => {
 
   if (session) return <Navigate to={homeFor(session)} replace />;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const go = (next: Session) => {
+    navigate(homeFor(next), { replace: true });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = login(email, password);
+    const result = await login(email, password);
     setLoading(false);
-    if (!result.ok) {
+    if (result.ok === false) {
       toast({ title: "Could not sign in", description: result.message, variant: "destructive" });
       return;
     }
-    navigate(homeFor(result.session), { replace: true });
+    go(result.session);
   };
 
   return (
-    <div className="min-h-screen dash-mesh flex items-center justify-center px-6 py-16 relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-8 transition-colors">
-          <ArrowLeft className="w-3 h-3" />
-          Back to home
-        </Link>
-        <div className="bg-card border border-border rounded-lg p-8 shadow-soft">
-          <div className="flex items-center gap-2 mb-6">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span className="text-sm tracking-wide">Vero</span>
-          </div>
-          <h1 className="text-xl font-light tracking-tight">Staff sign in</h1>
-          <p className="text-xs text-muted-foreground mt-1 mb-6">
-            Manufacturers and admins. Shoppers verify without an account.
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Email
-              </Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.ke" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Password
-              </Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full rounded-full text-[11px] uppercase tracking-wider font-normal">
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-          <p className="text-xs text-muted-foreground mt-6">
-            New manufacturer?{" "}
-            <Link to="/signup" className="text-foreground underline underline-offset-4">
-              Create a company account
-            </Link>
-          </p>
-          <p className="text-[11px] text-muted-foreground mt-6 pt-6 border-t border-border">
-            Demo: manufacturer@vero.demo or admin@vero.demo · demo1234
-          </p>
+    <AuthShell>
+      <h1 className="text-2xl font-light tracking-tight">Log in</h1>
+      <p className="text-sm text-muted-foreground mt-1 mb-6">
+        Use the email and password registered with Vero. If the API tunnel is down, you still open a local backup dashboard.
+      </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.ke"
+            required
+          />
         </div>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Your password"
+            required
+          />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full rounded-full">
+          {loading ? "Signing in..." : "Log in"}
+        </Button>
+      </form>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full rounded-full mt-3"
+        onClick={() => go(enterLocalDashboard(email))}
+      >
+        Open local backup
+      </Button>
+      <p className="text-sm text-muted-foreground mt-6">
+        New here?{" "}
+        <Link to="/signup" className="text-foreground underline underline-offset-4">
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 };
 

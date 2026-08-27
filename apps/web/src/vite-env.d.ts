@@ -1,10 +1,11 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** Base URL of the Kebs API, including the /api prefix. */
-  readonly VITE_API_URL?: string;
-  /** Optional comma-separated codes shown as one-click chips on /verify. */
-  readonly VITE_DEMO_CODES?: string;
+  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_SMS_SHORTCODE?: string;
+  readonly VITE_SMS_KEYWORD?: string;
+  readonly VITE_MAPBOX_ACCESS_TOKEN?: string;
+  readonly VITE_MAPBOX_STYLE?: string;
 }
 
 interface ImportMeta {

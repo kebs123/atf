@@ -1,12 +1,18 @@
 # apps/web
 
-Sample public site for Kebs.
+Vite + React frontend for Kebs. Talks to the live Express API. SQLite is not opened from the browser.
 
-**Full frontend documentation (structure, pages, rules):** [../../FRONTEND.md](../../FRONTEND.md)
+**Docs:** [../../FRONTEND.md](../../FRONTEND.md)
 
 ```bash
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 — `/` landing, `/verify` demo codes.
+Open http://127.0.0.1:5173 — `/verify` posts `{ "code" }` to `/api/verify`.
+
+```bash
+npm run build
+npx wrangler pages deploy dist
+```
