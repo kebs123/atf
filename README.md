@@ -4,7 +4,17 @@
 
 Kebs is a product-authenticity and traceability system for African markets. A consumer sends a short SMS with a code printed on the pack. They get a reply in seconds: genuine, already used, recalled, or unknown. Manufacturers get a cheap way to protect brands. Retailers get a trusted shelf. Public health gets fewer fake medicines, adulterated foods, and dangerous cosmetics in people’s hands.
 
-This repository currently holds **design documents only**. No application code yet.
+This repository holds design documents and a **sample landing page** you can open in the browser.
+
+To view the landing page:
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Then open [http://127.0.0.1:5173](http://127.0.0.1:5173). Public pages: `/` (landing) and `/verify` (demo codes, no backend yet).
 
 ---
 
@@ -154,9 +164,7 @@ Read in this order:
 
 ---
 
-## Intended folder structure (when coding starts)
-
-Not created yet. Target shape:
+## Intended folder structure
 
 ```
 atf/
@@ -166,10 +174,10 @@ atf/
   BACKEND.md
   DATABASE.md
   apps/
-    web/                 # Next.js
-    api/                 # Express.js
+    web/                 # Sample landing (Vite + React) — view this now
+    api/                 # Express.js (not built yet)
   data/
-    kebs.db              # SQLite file (gitignored)
+    kebs.db              # SQLite file (gitignored, not created yet)
 ```
 
 ---
