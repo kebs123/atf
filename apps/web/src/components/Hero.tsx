@@ -22,8 +22,8 @@ const slides = [
   },
   {
     image:
-      "https://images.unsplash.com/photo-1605540436563-5bca919ae766?auto=format&fit=crop&w=1600&q=75",
-    alt: "Fuel pump at a petroleum station",
+      "https://images.unsplash.com/photo-1664095884822-84eefbb8b3d1?auto=format&fit=crop&w=1600&q=75",
+    alt: "Knockoff sneakers stacked on cardboard boxes at a street market stall",
   },
   {
     image:
@@ -32,8 +32,8 @@ const slides = [
   },
   {
     image:
-      "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1600&q=75",
-    alt: "Bottles of wine representing alcoholic beverages",
+      "https://images.unsplash.com/photo-1696774772895-013333d6d7fa?auto=format&fit=crop&w=1600&q=75",
+    alt: "Replica designer handbags piled at a market stall",
   },
 ];
 

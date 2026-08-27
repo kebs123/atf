@@ -43,31 +43,8 @@ export function markOriginUp() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event("vero-origin"));
 }
 
-export function shouldSkipLive(): boolean {
-  return isOriginDown();
-}
-
-export function usingBackup(): boolean {
-  return isOriginDown();
-}
-
-export async function probeOrigin(): Promise<boolean> {
-  try {
-    const res = await fetch("/health", { signal: AbortSignal.timeout(4000) });
-    if (res.ok) {
-      markOriginUp();
-      return true;
-    }
-    if (res.status === 530 || res.status >= 500) {
-      markOriginDown();
-      return false;
-    }
-    markOriginUp();
-    return true;
-  } catch {
-    markOriginDown();
-    return false;
-  }
+export function resetSampleData() {
+  writeStore(seed());
 }
 
 type Store = {

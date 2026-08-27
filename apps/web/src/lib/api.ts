@@ -24,9 +24,6 @@ import {
   backupSubmitReport,
   backupVerifications,
   backupVerify,
-  markOriginDown,
-  markOriginUp,
-  shouldSkipLive,
 } from "@/lib/backup";
 
 export class ApiError extends Error {
@@ -53,24 +50,8 @@ export function userMessage(err: unknown): string {
   return "Cannot reach Vero. Try SMS if you have signal.";
 }
 
-export function isTunnelError(err: unknown): boolean {
-  if (!(err instanceof ApiError)) return true;
-  return err.status === 0 || err.status >= 500;
-}
-
-async function liveOrBackup<T>(live: () => Promise<T>, backup: () => T): Promise<T> {
-  if (shouldSkipLive()) return backup();
-  try {
-    const value = await live();
-    markOriginUp();
-    return value;
-  } catch (err) {
-    if (isTunnelError(err)) {
-      markOriginDown();
-      return backup();
-    }
-    throw err;
-  }
+async function liveOrBackup<T>(_live: () => Promise<T>, backup: () => T): Promise<T> {
+  return backup();
 }
 
 function unwrap(data: unknown): unknown {
@@ -186,7 +167,7 @@ export type VerifyOutcome = {
 };
 
 export async function verifyCode(code: string): Promise<VerifyOutcome> {
-  return liveOrBackup(async () => {
+  try {
     const json = await apiFetch<unknown>("/api/verify", {
       method: "POST",
       auth: false,
@@ -214,7 +195,9 @@ export async function verifyCode(code: string): Promise<VerifyOutcome> {
       firstVerifiedAt: str(o, "firstVerifiedAt", "first_verified_at", "first_check_at", "checked_at") || "",
       message: str(o, "message"),
     };
-  }, () => backupVerify(code));
+  } catch {
+    return backupVerify(code);
+  }
 }
 
 export type ReportStatus = "open" | "reviewing" | "closed";

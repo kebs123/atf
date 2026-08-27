@@ -1,5 +1,5 @@
-import { loginRequest, logoutRequest, ApiError, isTunnelError } from "@/lib/api";
-import { probeOrigin } from "@/lib/backup";
+import { logoutRequest } from "@/lib/api";
+import { resetSampleData } from "@/lib/backup";
 import {
   clearAuth,
   isLocalToken,
@@ -15,35 +15,21 @@ import {
 export type { CompanyStatus, Role, Session } from "@/lib/auth-store";
 export { getSession, homeFor } from "@/lib/auth-store";
 
-export function enterLocalDashboard(email = "", role: Role = "manufacturer"): Session {
-  const session = localPreviewSession(email, role);
+function openSampleSession(session: Session): Session {
+  resetSampleData();
   setAuth(`local.${Date.now()}`, session);
   return session;
+}
+
+export function enterLocalDashboard(email = "", role: Role = "manufacturer"): Session {
+  return openSampleSession(localPreviewSession(email, role));
 }
 
 export async function login(email: string, password: string): Promise<{ ok: true; session: Session } | { ok: false; message: string }> {
   const local = localLogin(email, password);
   if (local) {
-    setAuth(`local.${Date.now()}`, local);
-    return { ok: true, session: local };
+    return { ok: true, session: openSampleSession(local) };
   }
-
-  const live = await probeOrigin();
-  if (live) {
-    try {
-      const { token, session } = await loginRequest(email, password);
-      setAuth(token, session);
-      return { ok: true, session };
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        return { ok: false, message: "Email or password is wrong." };
-      }
-      if (!isTunnelError(err)) {
-        return { ok: false, message: "Could not sign in." };
-      }
-    }
-  }
-
   return { ok: true, session: enterLocalDashboard(email) };
 }
 
@@ -60,7 +46,5 @@ export async function registerManufacturer(input: {
   email: string;
   password: string;
 }): Promise<{ ok: true; session: Session } | { ok: false; message: string }> {
-  const session = saveLocalManufacturer(input);
-  setAuth(`local.${Date.now()}`, session);
-  return { ok: true, session };
+  return { ok: true, session: openSampleSession(saveLocalManufacturer(input)) };
 }
