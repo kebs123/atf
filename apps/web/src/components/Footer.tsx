@@ -9,7 +9,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck className="h-4 w-4" />
-              <span className="text-sm font-normal tracking-wide">Kebs</span>
+              <span className="text-sm font-normal tracking-wide">Vero</span>
             </div>
             <p className="text-background/70 text-xs font-light leading-relaxed max-w-xs">
               Protecting African consumers from counterfeit products with instant SMS and web verification.
@@ -35,6 +35,11 @@ const Footer = () => {
                   How it works
                 </a>
               </li>
+              <li>
+                <Link to="/login" className="text-background/70 hover:text-background smooth-hover text-xs font-light">
+                  Staff sign in
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -42,16 +47,16 @@ const Footer = () => {
           <div>
             <h4 className="text-sm font-medium mb-4">Contact Us</h4>
             <div className="flex flex-col gap-2">
-              <a href="mailto:hello@kebs.africa" className="text-background/70 hover:text-background smooth-hover text-xs font-light flex items-center gap-2">
+              <a href="mailto:hello@vero.africa" className="text-background/70 hover:text-background smooth-hover text-xs font-light flex items-center gap-2">
                 <Mail className="h-3 w-3" />
-                hello@kebs.africa
+                hello@vero.africa
               </a>
             </div>
           </div>
         </div>
 
         <div className="border-t border-background/20 pt-8 mt-12 text-center text-background/50 text-xs font-light">
-          <p>&copy; 2026 Kebs. All rights reserved.</p>
+          <p>&copy; 2026 Vero. All rights reserved.</p>
         </div>
       </div>
     </footer>;

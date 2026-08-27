@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kebs — Know it's real. Instantly.</title>
+    <title>Vero — Know it's real. Instantly.</title>
     <meta
       name="description"
-      content="Kebs lets anyone, even with a basic phone, instantly verify a product's authenticity via SMS before it reaches their hands."
+      content="Vero lets anyone, even with a basic phone, instantly verify a product's authenticity via SMS before it reaches their hands."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,6 +14,14 @@
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&display=swap"
       rel="stylesheet"
     />
+    <script>
+      try {
+        var t = localStorage.getItem("vero.theme");
+        if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

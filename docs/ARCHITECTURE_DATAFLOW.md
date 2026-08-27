@@ -353,7 +353,7 @@ flowchart TB
 | Express | Gateway send API | Outbound SMS | to, message |
 | Express | SQLite | Every command above | SQL |
 
-Full route list lives in [BACKEND.md](./BACKEND.md). Screen list lives in [FRONTEND.md](./FRONTEND.md). Tables live in [DATABASE.md](./DATABASE.md).
+Full route list lives in [BACKEND.md](./BACKEND.md). Screen list lives in [../FRONTEND.md](../FRONTEND.md). Tables live in [DATABASE.md](./DATABASE.md).
 
 ---
 

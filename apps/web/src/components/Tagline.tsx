@@ -11,7 +11,7 @@ const Tagline = () => {
           transition={{ duration: 0.7 }}
           className="text-xl md:text-2xl lg:text-3xl font-light leading-relaxed text-center max-w-4xl mx-auto text-balance"
         >
-          "Every day, thousands of Africans unknowingly buy fake medicine, adulterated food, and dangerous cosmetics—Kebs stops this by letting anyone, even with a basic phone, instantly verify a product's authenticity via SMS before it reaches their hands."
+          "Every day, thousands of Africans unknowingly buy fake personal care, drinks, building materials, and auto parts—Vero stops this by letting anyone, even with a basic phone, instantly verify a product's authenticity via SMS before it reaches their hands."
         </motion.p>
       </div>
     </section>

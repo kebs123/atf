@@ -85,7 +85,7 @@ const Verify = () => {
               </div>
               <div>
                 <h1 className="text-xl font-light tracking-tight">Verify a product</h1>
-                <p className="text-xs text-muted-foreground">Enter the pack code, or SMS KEBS &lt;code&gt; to 20880</p>
+                <p className="text-xs text-muted-foreground">Enter the pack code, or SMS VERO &lt;code&gt; to 20880</p>
               </div>
             </div>
 

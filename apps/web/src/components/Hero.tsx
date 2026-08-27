@@ -99,7 +99,7 @@ const Hero = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-4 max-w-sm text-sm text-white/80 font-light"
         >
-          SMS KEBS &lt;code&gt; to 20880 from any phone. No app. No data.
+          SMS VERO &lt;code&gt; to 20880 from any phone. No app. No data.
         </motion.p>
 
         <motion.div

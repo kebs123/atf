@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ShieldCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface NavigationProps {
   variant?: "default" | "dark";
@@ -37,6 +38,11 @@ const Navigation = ({
       href: "/verify",
       isRoute: true,
     },
+    {
+      label: "Staff",
+      href: "/login",
+      isRoute: true,
+    },
   ];
 
   const handleAnchorClick = (href: string) => {
@@ -64,7 +70,7 @@ const Navigation = ({
           }} className="flex items-center gap-2 cursor-pointer">
               <ShieldCheck className={`h-4 w-4 ${isMobileMenuOpen || isDark || !isScrolled ? "text-white" : "text-primary"}`} />
               <span className={`text-sm font-normal tracking-wide ${isMobileMenuOpen || isDark || !isScrolled ? "text-white" : "text-foreground"}`}>
-                Kebs
+                Vero
               </span>
             </motion.div>
           </Link>
@@ -80,6 +86,7 @@ const Navigation = ({
                 Verify a Product
               </Button>
             </Link>
+            <ThemeToggle className={isDark || !isScrolled ? "text-white hover:text-white" : ""} />
           </div>
 
           <button className={`md:hidden ${isMobileMenuOpen || isDark || !isScrolled ? "text-white" : "text-foreground"}`} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -111,6 +118,9 @@ const Navigation = ({
                 Verify a Product
               </Button>
             </Link>
+            <div className="mt-3">
+              <ThemeToggle className={isDark || !isScrolled ? "text-white hover:text-white" : ""} />
+            </div>
           </motion.div>}
       </AnimatePresence>
       </div>

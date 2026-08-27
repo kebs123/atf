@@ -15,7 +15,7 @@ const steps = [
   {
     icon: MessageCircle,
     title: "Instant Result",
-    description: "Kebs replies in seconds: Genuine, Warning, Recalled, or Not found — with product and batch details.",
+    description: "Vero replies in seconds: Genuine, Warning, Recalled, or Not found — with product and batch details.",
   },
 ];
 

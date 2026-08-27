@@ -4,6 +4,8 @@ The backend is the only place that **decides** if a code is genuine, already use
 
 **Stack:** Node.js + Express.js. Persistence: SQLite (see [DATABASE.md](./DATABASE.md)). SMS: HTTP webhook in, HTTP send out.
 
+Screens and sample app: [../FRONTEND.md](../FRONTEND.md).
+
 ---
 
 ## 1. Responsibilities

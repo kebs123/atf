@@ -152,34 +152,34 @@ flowchart TB
 
 ## Document map
 
-Read in this order:
-
 | File | What it answers |
 | --- | --- |
 | [README.md](./README.md) | Problem, users, stories, stack (this file). |
-| [ARCHITECTURE_DATAFLOW.md](./ARCHITECTURE_DATAFLOW.md) | How pieces connect and how data moves for each journey. |
-| [FRONTEND.md](./FRONTEND.md) | Next.js screens, roles, what each page does. |
-| [BACKEND.md](./BACKEND.md) | Express routes, SMS webhook, services, rules. |
-| [DATABASE.md](./DATABASE.md) | SQLite tables, fields, relationships, what each row means. |
+| [FRONTEND.md](./FRONTEND.md) | Frontend layout, sample app, screens (root). |
+| [docs/ARCHITECTURE_DATAFLOW.md](./docs/ARCHITECTURE_DATAFLOW.md) | How pieces connect and how data moves. |
+| [docs/BACKEND.md](./docs/BACKEND.md) | Express routes, SMS webhook, services, rules. |
+| [docs/DATABASE.md](./docs/DATABASE.md) | SQLite tables, fields, relationships. |
 
 ---
 
-## Intended folder structure
+## Folder structure
 
 ```
 atf/
   README.md
-  ARCHITECTURE_DATAFLOW.md
-  FRONTEND.md
-  BACKEND.md
-  DATABASE.md
+  FRONTEND.md              # frontend guide (stays at root)
+  docs/
+    ARCHITECTURE_DATAFLOW.md
+    BACKEND.md
+    DATABASE.md
   apps/
-    web/                 # Sample landing (Vite + React) — view this now
-    api/                 # Express.js (not built yet)
+    web/                   # Sample landing (Vite + React) — run this now
+    api/                   # Express.js (not built yet)
   data/
-    kebs.db              # SQLite file (gitignored, not created yet)
+    kebs.db                # SQLite (gitignored, not created yet)
 ```
 
+Details for `apps/web` live in [FRONTEND.md](./FRONTEND.md).
 ---
 
 ## Success for a first pilot
