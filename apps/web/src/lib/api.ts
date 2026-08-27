@@ -129,10 +129,7 @@ export async function apiFetch<T = unknown>(
   if (rest.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (auth) {
     const token = getToken();
-    if (isLocalToken(token)) {
-      throw new ApiError(503, "Working offline. The API tunnel is down.");
-    }
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (token && !isLocalToken(token)) headers.set("Authorization", `Bearer ${token}`);
   }
   let res: Response;
   try {

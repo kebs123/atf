@@ -5,7 +5,7 @@ import { ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { logout, type Session } from "@/lib/auth";
-import { usingBackup } from "@/lib/backup";
+import { probeOrigin, usingBackup } from "@/lib/backup";
 import { cn } from "@/lib/utils";
 
 type Item = { to: string; label: string; end?: boolean };
@@ -21,11 +21,11 @@ export function AppShell({
 }) {
   const navigate = useNavigate();
   const pending = session.role === "manufacturer" && session.companyStatus === "pending";
-  const [backup, setBackup] = useState(() => usingBackup());
+  const [backup, setBackup] = useState(false);
 
   useEffect(() => {
     const sync = () => setBackup(usingBackup());
-    sync();
+    void probeOrigin().then((up) => setBackup(!up));
     window.addEventListener("vero-origin", sync);
     window.addEventListener("vero-auth", sync);
     return () => {

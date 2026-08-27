@@ -1,4 +1,4 @@
-import { isLocalToken, getToken, type CompanyStatus } from "@/lib/auth-store";
+import type { CompanyStatus } from "@/lib/auth-store";
 import type { CategoryId } from "@/lib/categories";
 import type { Shipment } from "@/lib/trace";
 import type {
@@ -44,17 +44,16 @@ export function markOriginUp() {
 }
 
 export function shouldSkipLive(): boolean {
-  return isLocalToken(getToken()) || isOriginDown();
+  return isOriginDown();
 }
 
 export function usingBackup(): boolean {
-  return shouldSkipLive();
+  return isOriginDown();
 }
 
 export async function probeOrigin(): Promise<boolean> {
-  if (isOriginDown()) return false;
   try {
-    const res = await fetch("/health", { signal: AbortSignal.timeout(2500) });
+    const res = await fetch("/health", { signal: AbortSignal.timeout(4000) });
     if (res.ok) {
       markOriginUp();
       return true;

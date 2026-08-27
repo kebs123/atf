@@ -1,5 +1,5 @@
 import { loginRequest, logoutRequest, ApiError, isTunnelError } from "@/lib/api";
-import { isOriginDown, probeOrigin } from "@/lib/backup";
+import { probeOrigin } from "@/lib/backup";
 import {
   clearAuth,
   isLocalToken,
@@ -28,7 +28,7 @@ export async function login(email: string, password: string): Promise<{ ok: true
     return { ok: true, session: local };
   }
 
-  const live = isOriginDown() ? false : await probeOrigin();
+  const live = await probeOrigin();
   if (live) {
     try {
       const { token, session } = await loginRequest(email, password);
