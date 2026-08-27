@@ -2,7 +2,7 @@ export function apiOrigin(): string {
   return (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 }
 
-/** Browser always calls same origin `/api`. Vite (dev) and Pages Functions (prod) proxy to Express. */
+/** Browser always calls same origin `/api`. Vite (dev) and the Worker (prod) proxy to Express. */
 export function apiRoot(): string {
   return "";
 }

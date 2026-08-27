@@ -18,7 +18,7 @@ npm run dev
 
 Then open [http://127.0.0.1:5173](http://127.0.0.1:5173). Public verify: `/verify` → `POST /api/verify` `{ "code": "SGSP792F" }`.
 
-Cloudflare Pages: `cd apps/web && npm run build && npx wrangler pages deploy dist`.
+Cloudflare Worker: `cd apps/web && npm run build && npx wrangler deploy` (Git: branch `frontend`, root `apps/web`).
 
 ---
 

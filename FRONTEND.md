@@ -36,8 +36,8 @@ atf/
     DATABASE.md
   apps/
     web/                    # Vite SPA — live API client
-      wrangler.jsonc        # Cloudflare Pages
-      public/_redirects     # SPA fallback
+      wrangler.jsonc        # Cloudflare Worker (SPA + /api proxy)
+      worker.js             # /api proxy + /config.json (Mapbox secrets)
 
 ```
 
@@ -63,21 +63,25 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Dev proxies `/api` and `/he
 
 **Example unit already in SQLite:** `SGSP792F`
 
-### Cloudflare Pages
+### Cloudflare Workers
+
+App root is `apps/web`. On a Git-connected Worker, use branch `frontend` and set **Root directory** to `apps/web`.
 
 ```bash
 cd apps/web
 npm run build
-npx wrangler pages deploy dist
+npx wrangler deploy
 ```
 
-Set build env for Mapbox and SMS copy (`VITE_MAPBOX_*`, `VITE_SMS_*`). The browser calls **same-origin** `/api`; set the Pages secret `API_ORIGIN` to the live Express URL (not a `VITE_` var) so TryCloudflare hostnames can rotate without a JS rebuild.
+The Worker serves `dist` as an SPA. Mapbox is **not** baked in at build time: set Worker secrets so you can change the token in the dashboard without a rebuild.
 
 ```bash
-printf '%s' "https://your-tunnel.trycloudflare.com" | npx wrangler pages secret put API_ORIGIN --project-name kebs-web
+printf '%s' "https://your-tunnel.trycloudflare.com" | npx wrangler secret put API_ORIGIN
+printf '%s' "pk.your_mapbox_token" | npx wrangler secret put MAPBOX_ACCESS_TOKEN
+printf '%s' "mapbox://styles/your-username/your-style" | npx wrangler secret put MAPBOX_STYLE
 ```
 
-`public/_redirects` sends page routes to `index.html`. `/api/*` is handled by Pages Functions.
+The browser calls same-origin `/api` (proxied to `API_ORIGIN`) and `/config.json` (Mapbox token + style).
 
 **Africa's Talking:** API keys stay on Express. Callback should hit the live webhook (typically `POST /api/webhooks/sms`). The UI only shows `VITE_SMS_KEYWORD` + `VITE_SMS_SHORTCODE`.
 

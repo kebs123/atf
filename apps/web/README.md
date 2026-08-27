@@ -14,5 +14,7 @@ Open http://127.0.0.1:5173 — `/verify` posts `{ "code" }` to `/api/verify`.
 
 ```bash
 npm run build
-npx wrangler pages deploy dist
+npx wrangler deploy
 ```
+
+Git Worker: branch `frontend`, root directory `apps/web`. Set secrets `API_ORIGIN`, `MAPBOX_ACCESS_TOKEN`, and `MAPBOX_STYLE`.
