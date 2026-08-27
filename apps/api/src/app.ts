@@ -27,7 +27,7 @@ export function createApp() {
     res.json({ ok: true });
   });
 
-  app.use(apiRouter);
+  app.use("/api", apiRouter);
   app.use(notFound);
   app.use(errorHandler);
 
