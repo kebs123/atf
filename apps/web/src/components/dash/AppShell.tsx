@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,16 +24,16 @@ export function AppShell({
     <div className="min-h-screen dash-mesh flex">
       <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-border bg-card/70 backdrop-blur-md">
         <div className="px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 min-w-0">
             <motion.span
-              className="h-8 w-8 rounded-full bg-primary text-primary-foreground grid place-items-center"
+              className="h-8 w-8 shrink-0 rounded-full bg-primary text-primary-foreground grid place-items-center"
               animate={{ rotate: [0, -8, 8, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             >
               <ShieldCheck className="h-4 w-4" />
             </motion.span>
             <span className="text-sm tracking-wide">Vero</span>
-          </div>
+          </Link>
           <ThemeToggle />
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -61,8 +61,7 @@ export function AppShell({
             size="sm"
             className="mt-3 w-full justify-start text-[11px] uppercase tracking-wider font-normal rounded-full"
             onClick={() => {
-              logout();
-              navigate("/login");
+              void logout().then(() => navigate("/", { replace: true }));
             }}
           >
             <LogOut className="h-3 w-3" />
@@ -84,8 +83,7 @@ export function AppShell({
               size="sm"
               className="text-[11px] uppercase tracking-wider"
               onClick={() => {
-                logout();
-                navigate("/login");
+                void logout().then(() => navigate("/", { replace: true }));
               }}
             >
               Sign out

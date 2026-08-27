@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Verify from "./pages/Verify";
+import Report from "./pages/Report";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ManufacturerHome from "./pages/app/ManufacturerHome";
@@ -12,10 +13,13 @@ import ProductDetail from "./pages/app/ProductDetail";
 import BatchDetail from "./pages/app/BatchDetail";
 import Alerts from "./pages/app/Alerts";
 import Shipments from "./pages/app/Shipments";
+import ShipmentDetail from "./pages/app/ShipmentDetail";
+import ManufacturerReports from "./pages/app/Reports";
 import AdminHome from "./pages/admin/AdminHome";
 import Companies from "./pages/admin/Companies";
 import Flags from "./pages/admin/Flags";
 import Verifications from "./pages/admin/Verifications";
+import AdminReports from "./pages/admin/Reports";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import { RequireAuth } from "./components/auth/RequireAuth";
@@ -29,6 +33,7 @@ const App = () => (
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/verify" element={<Verify />} />
+        <Route path="/report" element={<Report />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route
@@ -80,6 +85,22 @@ const App = () => (
           }
         />
         <Route
+          path="/app/shipments/:id"
+          element={
+            <RequireAuth role="manufacturer">
+              <ShipmentDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/app/reports"
+          element={
+            <RequireAuth role="manufacturer">
+              <ManufacturerReports />
+            </RequireAuth>
+          }
+        />
+        <Route
           path="/admin"
           element={
             <RequireAuth role="admin">
@@ -108,6 +129,14 @@ const App = () => (
           element={
             <RequireAuth role="admin">
               <Verifications />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <RequireAuth role="admin">
+              <AdminReports />
             </RequireAuth>
           }
         />

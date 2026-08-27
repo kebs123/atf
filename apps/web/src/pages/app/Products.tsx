@@ -5,34 +5,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { useLive } from "@/hooks/use-live";
 import { useToast } from "@/hooks/use-toast";
 import { CATEGORIES, categoryLabel, type CategoryId } from "@/lib/categories";
-import { PRODUCTS, PRODUCT_BATCHES } from "@/lib/demo-data";
+import { createProduct, listProducts, userMessage } from "@/lib/api";
 import { MANUFACTURER_NAV } from "@/lib/nav";
 
 const Products = () => {
   const session = useAuth();
   const { toast } = useToast();
+  const { data, error, loading, reload } = useLive(listProducts);
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [category, setCategory] = useState<CategoryId>("personal-care");
   const [filter, setFilter] = useState<CategoryId | "all">("all");
-  const [rows, setRows] = useState(PRODUCTS);
+  const [saving, setSaving] = useState(false);
 
   if (!session) return <Navigate to="/login" replace />;
   const canCreate = session.companyStatus === "approved";
+  const rows = data ?? [];
   const visible = filter === "all" ? rows : rows.filter((p) => p.category === filter);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canCreate) {
       toast({ title: "You cannot do this.", description: "Wait for Vero to approve your company.", variant: "destructive" });
       return;
     }
-    setRows((prev) => [{ id: `p${prev.length + 1}`, name, sku, category, batches: 0, codes: 0, status: "Active" }, ...prev]);
-    setName("");
-    setSku("");
-    toast({ title: "Product saved", description: `${name} is listed under ${categoryLabel(category)}.` });
+    setSaving(true);
+    try {
+      await createProduct({ name, sku, category });
+      setName("");
+      setSku("");
+      toast({ title: "Product saved", description: `${name} is listed under ${categoryLabel(category)}.` });
+      reload();
+    } catch (err) {
+      toast({ title: "Could not save product", description: userMessage(err), variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -40,6 +51,7 @@ const Products = () => {
       <div className="max-w-5xl">
         <h1 className="text-2xl font-light tracking-tight">Products</h1>
         <p className="text-sm text-muted-foreground mt-1">SKUs for {session.companyName}, grouped by category.</p>
+        {error && <p className="text-sm text-destructive mt-4">{error}</p>}
 
         <div className="flex flex-wrap gap-2 mt-6">
           <button
@@ -85,8 +97,8 @@ const Products = () => {
               ))}
             </select>
           </div>
-          <Button type="submit" className="rounded-full text-[11px] uppercase tracking-wider font-normal">
-            Create SKU
+          <Button type="submit" disabled={saving} className="rounded-full text-[11px] uppercase tracking-wider font-normal">
+            {saving ? "Saving..." : "Create SKU"}
           </Button>
         </form>
 
@@ -102,16 +114,22 @@ const Products = () => {
               </tr>
             </thead>
             <tbody>
+              {loading && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>Loading…</td>
+                </tr>
+              )}
+              {!loading && visible.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>No products yet.</td>
+                </tr>
+              )}
               {visible.map((p) => (
                 <tr key={p.id} className="border-t border-border">
                   <td className="px-4 py-3">
-                    {PRODUCT_BATCHES[p.id] ? (
-                      <Link to={`/app/products/${p.id}`} className="underline underline-offset-4">
-                        {p.name}
-                      </Link>
-                    ) : (
-                      p.name
-                    )}
+                    <Link to={`/app/products/${p.id}`} className="underline underline-offset-4">
+                      {p.name}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{categoryLabel(p.category)}</td>
                   <td className="px-4 py-3 font-mono text-xs">{p.sku}</td>

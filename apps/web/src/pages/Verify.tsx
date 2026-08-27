@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, AlertTriangle, Search, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,35 +9,68 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { userMessage, verifyCode, type VerifyOutcome } from "@/lib/api";
+import { smsHint } from "@/lib/config";
+import { resultLabel, type ResultCode } from "@/lib/results";
 
-const codeSchema = z.string().min(3, "Code is too short").max(50, "Code is too long").regex(/^[A-Za-z0-9\-]+$/, "Only letters, numbers, and hyphens allowed");
+const codeSchema = z
+  .string()
+  .min(3, "Code is too short")
+  .max(50, "Code is too long")
+  .regex(/^[A-Za-z0-9\-]+$/, "Only letters, numbers, and hyphens allowed");
 
-interface ProductResult {
-  code: string;
-  productName: string;
-  manufacturer: string;
-  batch: string;
-  isAuthentic: boolean;
-}
+const banner: Record<ResultCode, { className: string; icon: "ok" | "warn"; body: (r: VerifyOutcome) => string }> = {
+  genuine: {
+    className: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800",
+    icon: "ok",
+    body: (r) =>
+      r.message ||
+      `${r.productName} from ${r.manufacturer}${r.batch !== "—" ? ` · batch ${r.batch}` : ""}${r.expiry ? ` · exp ${r.expiry}` : ""}. First check. If the pack looks tampered, do not use.`,
+  },
+  already_verified: {
+    className: "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800",
+    icon: "warn",
+    body: (r) =>
+      r.message ||
+      `This code was first checked${r.firstVerifiedAt ? ` ${r.firstVerifiedAt}` : " earlier"}. If that was not you, do not use this product.`,
+  },
+  recalled: {
+    className: "bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800",
+    icon: "warn",
+    body: (r) => r.message || `Do not use. Return to seller.${r.batch !== "—" ? ` Batch ${r.batch}.` : ""}`,
+  },
+  expired: {
+    className: "bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800",
+    icon: "warn",
+    body: (r) => r.message || `Past expiry${r.expiry ? ` (${r.expiry})` : ""}. Do not use.`,
+  },
+  flagged: {
+    className: "bg-red-50 border-red-200 dark:bg-red-950/40 dark:border-red-800",
+    icon: "warn",
+    body: (r) => r.message || "This code is under review. Do not use.",
+  },
+  unknown: {
+    className: "bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800",
+    icon: "warn",
+    body: (r) => r.message || "This code was not found. Check the digits. If the print is clear, treat the pack as unsafe.",
+  },
+};
 
-// Hardcoded demo codes — no backend needed for this simple starter.
-const DEMO_PRODUCTS: ProductResult[] = [
-  { code: "7K4P2M9Q", productName: "Paracetamol 500mg", manufacturer: "Demo Pharma KE", batch: "B12", isAuthentic: true },
-  { code: "A3N8R2T6", productName: "Cooking oil 1L", manufacturer: "Demo Foods", batch: "F04", isAuthentic: true },
-  { code: "H9C1L5W2", productName: "Skin cream 50ml", manufacturer: "Demo Beauty", batch: "C09", isAuthentic: true },
-  { code: "FAKE0001", productName: "Unknown Product", manufacturer: "Unknown", batch: "—", isAuthentic: false },
-];
-
-const Verify = () => {
+export default function Verify() {
+  const [searchParams] = useSearchParams();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ProductResult | null>(null);
+  const [result, setResult] = useState<VerifyOutcome | null>(null);
   const [checked, setChecked] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const q = searchParams.get("code");
+    if (q) setCode(q);
+  }, [searchParams]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     const validation = codeSchema.safeParse(code.trim());
     if (!validation.success) {
       toast({
@@ -47,20 +80,25 @@ const Verify = () => {
       });
       return;
     }
-
     setLoading(true);
     setResult(null);
     setChecked(false);
-
-    // Simulate a short network/SMS lookup delay.
-    setTimeout(() => {
-      const normalized = code.trim().toUpperCase();
-      const match = DEMO_PRODUCTS.find((p) => p.code === normalized);
-      setResult(match || { code: normalized, productName: "Unknown Product", manufacturer: "Unknown", batch: "—", isAuthentic: false });
+    try {
+      const outcome = await verifyCode(validation.data);
+      setResult(outcome);
       setChecked(true);
+    } catch (err) {
+      toast({
+        title: "Could not check this code",
+        description: userMessage(err),
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
+
+  const style = result ? banner[result.result] : null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -85,7 +123,7 @@ const Verify = () => {
               </div>
               <div>
                 <h1 className="text-xl font-light tracking-tight">Verify a product</h1>
-                <p className="text-xs text-muted-foreground">Enter the pack code, or SMS VERO &lt;code&gt; to 20880</p>
+                <p className="text-xs text-muted-foreground">Enter the pack code, or {smsHint()}</p>
               </div>
             </div>
 
@@ -99,13 +137,15 @@ const Verify = () => {
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="e.g. 7K4P2M9Q"
+                  placeholder="e.g. SGSP792F"
                   className="rounded-md"
                   required
                 />
               </div>
               <Button type="submit" disabled={loading} className="w-full rounded-full text-[11px] uppercase tracking-wider font-normal">
-                {loading ? "Checking..." : (
+                {loading ? (
+                  "Checking..."
+                ) : (
                   <>
                     <Search className="w-4 h-4 mr-2" />
                     Check Authenticity
@@ -115,7 +155,7 @@ const Verify = () => {
             </form>
 
             <AnimatePresence mode="wait">
-              {checked && result && (
+              {checked && result && style && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
@@ -123,59 +163,29 @@ const Verify = () => {
                   transition={{ duration: 0.4 }}
                   className="mt-6 overflow-hidden"
                 >
-                  <div className={`p-5 rounded-lg border ${result.isAuthentic ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
+                  <div className={`p-5 rounded-lg border ${style.className}`}>
                     <div className="flex items-start gap-3">
-                      {result.isAuthentic ? (
+                      {style.icon === "ok" ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
                       ) : (
                         <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                       )}
                       <div>
-                        <h3 className={`text-sm font-medium ${result.isAuthentic ? "text-emerald-800" : "text-amber-800"}`}>
-                          {result.isAuthentic ? "Verified Authentic" : "Counterfeit / Unknown"}
-                        </h3>
-                        <p className={`text-xs mt-1 ${result.isAuthentic ? "text-emerald-700" : "text-amber-700"}`}>
-                          {result.isAuthentic
-                            ? `This ${result.productName} from ${result.manufacturer} (batch ${result.batch}) is authentic.`
-                            : "This code was not found in our system. Do not use this product and report it to the manufacturer."}
-                        </p>
+                        <h3 className="text-sm font-medium">{resultLabel(result.result)}</h3>
+                        <p className="text-xs mt-1 text-muted-foreground">{style.body(result)}</p>
+                        <p className="text-[11px] mt-2 text-muted-foreground">This describes the code, not a guarantee that the pack is safe.</p>
+                        <Link
+                          to={`/report?code=${encodeURIComponent(result.code)}`}
+                          className="inline-flex mt-3 text-xs underline underline-offset-4"
+                        >
+                          Report this as counterfeit
+                        </Link>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <div className="mt-8 pt-6 border-t border-border">
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Try a demo code</p>
-              <div className="flex flex-wrap gap-2">
-                {DEMO_PRODUCTS.filter((p) => p.isAuthentic).map((p) => (
-                  <button
-                    key={p.code}
-                    type="button"
-                    onClick={() => {
-                      setCode(p.code);
-                      setResult(null);
-                      setChecked(false);
-                    }}
-                    className="text-xs px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-                  >
-                    {p.code}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCode("FAKE0001");
-                    setResult(null);
-                    setChecked(false);
-                  }}
-                  className="text-xs px-3 py-1.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
-                >
-                  FAKE0001
-                </button>
-              </div>
-            </div>
           </div>
         </motion.div>
       </main>
@@ -183,6 +193,4 @@ const Verify = () => {
       <Footer />
     </div>
   );
-};
-
-export default Verify;
+}

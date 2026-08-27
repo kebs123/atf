@@ -3,18 +3,22 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/dash/AppShell";
 import { AnalyticsBoard } from "@/components/dash/AnalyticsBoard";
 import { useAuth } from "@/hooks/use-auth";
+import { useLive } from "@/hooks/use-live";
 import { ADMIN_NAV } from "@/lib/nav";
-import { ADMIN_CHECKS_BY_DAY, ADMIN_STATS } from "@/lib/demo-data";
+import { getStatsOverview } from "@/lib/api";
 
 const AdminHome = () => {
   const session = useAuth();
+  const { data, error } = useLive(getStatsOverview);
+
   if (!session) return <Navigate to="/login" replace />;
 
   const cards = [
-    { label: "Pending companies", value: ADMIN_STATS.pendingCompanies, href: "/admin/companies" },
-    { label: "Approved companies", value: ADMIN_STATS.approvedCompanies, href: "/admin/companies" },
-    { label: "Open flags", value: ADMIN_STATS.flagsOpen, href: "/admin/flags" },
-    { label: "Checks today", value: ADMIN_STATS.checksToday.toLocaleString(), href: "/admin/verifications" },
+    { label: "Pending companies", value: data?.pendingCompanies ?? "—", href: "/admin/companies" },
+    { label: "Approved companies", value: data?.approvedCompanies ?? "—", href: "/admin/companies" },
+    { label: "Open flags", value: data?.flagsOpen ?? "—", href: "/admin/flags" },
+    { label: "Checks today", value: data ? data.checksToday.toLocaleString() : "—", href: "/admin/verifications" },
+    { label: "Open reports", value: data?.openReports ?? "—", href: "/admin/reports" },
   ];
 
   return (
@@ -29,7 +33,8 @@ const AdminHome = () => {
         </div>
         <h1 className="text-3xl font-light tracking-tight">Vero admin</h1>
         <p className="text-sm text-muted-foreground mt-1">Approve companies, watch flags, and watch checks by category.</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+        {error && <p className="text-sm text-destructive mt-4">{error}</p>}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-8">
           {cards.map((card, i) => (
             <Link key={card.label} to={card.href} className="block">
               <motion.div
@@ -44,7 +49,7 @@ const AdminHome = () => {
             </Link>
           ))}
         </div>
-        <AnalyticsBoard series={ADMIN_CHECKS_BY_DAY} title="National checks by category" />
+        {data?.series?.length ? <AnalyticsBoard series={data.series} title="National checks by category" /> : null}
       </div>
     </AppShell>
   );

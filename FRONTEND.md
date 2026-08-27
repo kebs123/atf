@@ -9,12 +9,12 @@ The frontend is everything a person sees in a **browser**. It is not the SMS exp
 
 ## Stack
 
-| Now (sample) | Later (production target) |
+| Layer | Choice |
 | --- | --- |
-| **Vite + React + TypeScript** in `apps/web` | **Next.js** (App Router) when dashboards + auth land |
-| React Router (`/`, `/verify`) | Same public routes; add `/login`, `/app/*`, `/admin/*` |
-| Hardcoded demo codes on `/verify` | `POST /verify` → Express → SQLite |
-| Tailwind + shadcn-style UI primitives | Keep visual language; wire to real API |
+| **Vite + React + TypeScript** in `apps/web` | Public verify, manufacturer, and admin |
+| React Router | `/`, `/verify`, `/login`, `/signup`, `/app/*`, `/admin/*` |
+| Live Express API | `VITE_API_BASE_URL` + `POST /api/verify` `{ "code" }` |
+| Tailwind + shadcn-style UI primitives | Unchanged |
 
 **Rules that do not change**
 
@@ -35,39 +35,17 @@ atf/
     BACKEND.md
     DATABASE.md
   apps/
-    web/                    # sample landing (runnable now)
-      index.html
-      package.json
-      vite.config.ts
-      public/
-      src/
-        main.tsx
-        App.tsx             # routes
-        index.css           # design tokens
-        pages/
-          Index.tsx         # landing /
-          Verify.tsx        # /verify (demo)
-          NotFound.tsx
-        components/
-          Navigation.tsx
-          Hero.tsx
-          Tagline.tsx
-          HowItWorks.tsx
-          Features.tsx
-          Footer.tsx
-          ScrollToTop.tsx
-          ui/               # button, input, label, toast, tooltip
-        hooks/
-          use-toast.ts
-        lib/
-          utils.ts
-    api/                    # Express — not built yet
-  data/                     # SQLite file later (gitignored)
+    web/                    # Vite SPA — live API client
+      wrangler.jsonc        # Cloudflare Pages
+      public/_redirects     # SPA fallback
+
 ```
 
 ---
 
-## Run the sample
+## Run
+
+Copy [`apps/web/.env.example`](apps/web/.env.example) to `.env`. Set `VITE_API_BASE_URL` to the live Express origin (TryCloudflare hostnames rotate).
 
 ```bash
 cd apps/web
@@ -75,15 +53,33 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:5173](http://127.0.0.1:5173).
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Dev proxies `/api` and `/health` to `VITE_API_BASE_URL`.
 
 | Path | Status | What you see |
 | --- | --- | --- |
-| `/` | **Built** | Hero, Vero hook, how it works, features, footer |
-| `/verify` | **Built (demo)** | Code box; local fake lookup, no Express |
-| `/login`, `/signup`, `/app/*`, `/admin/*` | **Built (demo)** | Local session; no Express yet |
+| `/` | Live | Hero, Vero hook, how it works, features, footer |
+| `/verify` | Live | `POST /api/verify` `{ "code": "SGSP792F" }` |
+| `/login`, `/signup`, `/app/*`, `/admin/*` | Live | Bearer token against Express + SQLite |
 
-**Demo codes on `/verify`:** `7K4P2M9Q`, `A3N8R2T6`, `H9C1L5W2` (genuine) · `FAKE0001` (unknown)
+**Example unit already in SQLite:** `SGSP792F`
+
+### Cloudflare Pages
+
+```bash
+cd apps/web
+npm run build
+npx wrangler pages deploy dist
+```
+
+Set build env for Mapbox and SMS copy (`VITE_MAPBOX_*`, `VITE_SMS_*`). The browser calls **same-origin** `/api`; set the Pages secret `API_ORIGIN` to the live Express URL (not a `VITE_` var) so TryCloudflare hostnames can rotate without a JS rebuild.
+
+```bash
+printf '%s' "https://your-tunnel.trycloudflare.com" | npx wrangler pages secret put API_ORIGIN --project-name kebs-web
+```
+
+`public/_redirects` sends page routes to `index.html`. `/api/*` is handled by Pages Functions.
+
+**Africa's Talking:** API keys stay on Express. Callback should hit the live webhook (typically `POST /api/webhooks/sms`). The UI only shows `VITE_SMS_KEYWORD` + `VITE_SMS_SHORTCODE`.
 
 ---
 
@@ -107,6 +103,7 @@ flowchart TB
   subgraph public [Public]
     Home["/ Landing"]
     Verify["/verify"]
+    Report["/report"]
     How["/how-it-works"]
     Login["/login"]
     Signup["/signup"]
@@ -119,7 +116,8 @@ flowchart TB
     Product["/app/products/id"]
     Batch["/app/batches/id"]
     Alerts["/app/alerts"]
-    Ship["/app/shipments"]
+    Ship["/app/shipments Trace"]
+    Reports["/app/reports"]
   end
 
   subgraph adm [Admin after login]
@@ -127,9 +125,12 @@ flowchart TB
     Cos["/admin/companies"]
     Flags["/admin/flags"]
     Vlog["/admin/verifications"]
+    AdmReports["/admin/reports"]
   end
 
   Home --> Verify
+  Home --> Report
+  Verify --> Report
   Home --> Login
   Home --> How
   Home --> Privacy
@@ -142,28 +143,34 @@ flowchart TB
   Product --> Batch
   App --> Alerts
   App --> Ship
+  App --> Reports
   AdminHome --> Cos
   AdminHome --> Flags
   AdminHome --> Vlog
+  AdminHome --> AdmReports
 ```
 
 | Path | Who | Job | Sample status |
 | --- | --- | --- | --- |
 | `/` | Public | What Vero is, how to SMS, verify CTA | Built |
-| `/verify` | Public | Code box + result | Built (demo data) |
+| `/verify` | Public | Code box + result | Live `POST /api/verify` |
+| `/report` | Public | Report a suspected counterfeit | Live `POST /api/reports` |
 | `/how-it-works` | Public | Pack → SMS or web → reply | On landing as `#how-it-works` |
-| `/login` | Staff | Manufacturer / admin / retailer | Built (demo) |
-| `/signup` | Manufacturer | Register company (`pending`) | Built (demo) |
-| `/app` | Manufacturer | Counts: codes, checks, alerts | Built (demo) |
-| `/app/products` | Manufacturer | List + create SKU | Built (demo) |
-| `/app/products/[id]` | Manufacturer | Product detail, batches | Built (demo) |
-| `/app/batches/[id]` | Manufacturer | Generate/export codes, recall | Built (demo) |
-| `/app/alerts` | Manufacturer | Hot / flagged codes | Built (demo) |
-| `/app/shipments` | Manufacturer | Custody (phase 1.5) | Built (demo) |
-| `/admin` | Admin | Overview | Built (demo) |
-| `/admin/companies` | Admin | Approve / suspend | Built (demo) |
-| `/admin/flags` | Admin | Unknown / high-repeat | Built (demo) |
-| `/admin/verifications` | Admin | Searchable log | Built (demo) |
+| `/login` | Staff | Manufacturer / admin / retailer | Live `POST /api/auth/login` |
+| `/signup` | Manufacturer | Register company (`pending`) | Live `POST /api/auth/register` |
+| `/app` | Manufacturer | Counts: codes, checks, alerts | Live |
+| `/app/products` | Manufacturer | List + create SKU | Live |
+| `/app/products/[id]` | Manufacturer | Product detail, batches | Live |
+| `/app/batches/[id]` | Manufacturer | Generate/export codes, recall | Live |
+| `/app/alerts` | Manufacturer | Hot / flagged codes; Open on Trace | Live |
+| `/app/shipments` | Manufacturer | Mapbox Trace from live checks | Live (geo if API sends lat/lng) |
+| `/app/shipments/:id` | Manufacturer | One route + checks | Live if `/api/shipments` exists |
+| `/app/reports` | Manufacturer | Consumer counterfeit reports | Live |
+| `/admin` | Admin | Overview | Live |
+| `/admin/companies` | Admin | Approve / suspend | Live |
+| `/admin/flags` | Admin | Unknown / high-repeat | Live |
+| `/admin/verifications` | Admin | Searchable log | Live |
+| `/admin/reports` | Admin | All consumer reports | Live |
 | `/privacy` | Public | What we store | Planned |
 
 ---
@@ -183,72 +190,47 @@ flowchart TB
 | Features | `Features.tsx` | Registration, verify, SMS, traceability, analytics |
 | Footer | `Footer.tsx` | Links + contact |
 
-No API required yet.
+Landing copy does not mint codes. Verify uses the live API.
 
 ---
 
-### Verify `/verify` (built — demo)
+### Verify `/verify` (live)
 
 **Job:** Same decision as SMS, readable on a larger screen.
 
-**UI today**
+**API:** `POST {VITE_API_BASE_URL}/api/verify` with `{ "code": "SGSP792F" }`.
 
-- One input + “Check authenticity”.
-- Demo chips for sample codes.
-- Result: authentic vs unknown (simplified). When Express exists, map to full result set below.
+Result states: `genuine`, `already_verified`, `recalled`, `expired`, `unknown`, `flagged`.
 
-**Target result states** (match SMS / [docs/BACKEND.md](./docs/BACKEND.md)):
-
-| Result | Colour intent | User must see |
-| --- | --- | --- |
-| `genuine` | Calm | Product, manufacturer, batch, expiry; first check vs not |
-| `already_verified` | Warning | When first checked; if that was not you, do not use |
-| `recalled` | Danger | Do not use |
-| `expired` | Danger | Past expiry; do not use |
-| `unknown` | Neutral/danger | Not in system; check digits / treat as unsafe |
-| `flagged` | Danger | Under review; do not use |
-
-**API (when wired):** `POST /verify` `{ code, channel: "web" }`.  
 **QR:** `/verify?code=...` pre-fill; pack still shows SMS text.
 
 **Must not:** Claim “100% safe”. Describe **code** status only.
 
 ---
 
-### Login `/login` and signup `/signup` (built — demo)
+### Login `/login` and signup `/signup`
 
-Email + password. Demo accounts (no Express yet):
-
-- `manufacturer@vero.demo` / `demo1234` → `/app`
-- `admin@vero.demo` / `demo1234` → `/admin`
-
-Signup is manufacturer-only (`POST /auth/register` later). New companies start `pending`. Prefer httpOnly cookie when the API exists.
+Email + password against Express (`POST /api/auth/login`, `POST /api/auth/register`). Session is a Bearer token in localStorage (cross-origin SPA). New companies start `pending`.
 
 ---
 
-### Manufacturer `/app` (built — demo)
+### Manufacturer `/app`
 
-Interactive analytics: stacked 14-day checks, category chips (personal care, food/alcoholic & drinks, construction, automotive), share cards. Brown theme with light/dark toggle.  
-Recent verifications **for this company only**.  
-API: `GET /stats/overview`, `GET /verifications?limit=20`
+Interactive analytics from `GET /api/stats/overview` and `GET /api/verifications?limit=20`.
 
----
+### Products & batches
 
-### Products & batches (built — demo)
+- `/app/products` — list + create (`GET/POST /api/products`)
+- `/app/products/[id]` — batches (`GET /api/products/:id`, `POST /api/batches`)
+- `/app/batches/[id]` — generate codes, CSV export, recall  
+  (`POST /api/batches/:id/codes`, `GET .../codes.csv`, `POST .../recall`)
 
-- `/app/products` — list + create (`GET/POST /products`)
-- `/app/products/[id]` — batches (`GET /products/:id`, `POST /batches`)
-- `/app/batches/[id]` — generate codes, CSV export, recall, stats  
-  (`POST /batches/:id/codes`, `GET .../codes.csv`, `POST .../recall`)
+### Alerts & admin
 
-Do not dump tens of thousands of codes in HTML — CSV for print.
-
----
-
-### Alerts & admin (built — demo)
-
-- `/app/alerts` — high `verify_count` / flagged units  
-- `/admin/companies` — approve before code generation  
+- `/app/alerts` — `GET /api/alerts`
+- `/app/shipments` — Trace from live verifications (coordinates if present)
+- `/app/reports` — `GET /api/reports`
+- `/admin/companies` — `GET /api/admin/companies`, approve / suspend
 - `/admin/flags`, `/admin/verifications`, `/admin/reports`
 
 ---
@@ -268,7 +250,7 @@ Do not dump tens of thousands of codes in HTML — CSV for print.
 
 | State | Where | Notes |
 | --- | --- | --- |
-| Auth session | Cookie / token | `/app`, `/admin` only |
+| Auth session | Bearer token in localStorage | `/app`, `/admin` only |
 | Verify form | Component state | Do not keep codes in localStorage |
 | Flash / toast | Toast | “Batch recalled”, “Codes generated” |
 

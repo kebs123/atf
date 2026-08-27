@@ -1,103 +1,121 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { homeFor, registerManufacturer } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Signup = () => {
   const session = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (session) return <Navigate to={homeFor(session)} replace />;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) {
       toast({ title: "Password too short", description: "Use at least 8 characters.", variant: "destructive" });
       return;
     }
+    if (password !== confirm) {
+      toast({ title: "Passwords do not match", description: "Re-enter the same password.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    const result = registerManufacturer({ companyName, name, email, password });
+    const result = await registerManufacturer({
+      companyName: companyName.trim() || `${name.trim()}'s company`,
+      name,
+      email,
+      password,
+    });
     setLoading(false);
-    if (!result.ok) {
-      toast({ title: "Could not register", description: result.message, variant: "destructive" });
+    if (result.ok === false) {
+      toast({ title: "Could not create account", description: result.message, variant: "destructive" });
       return;
     }
     toast({
-      title: "Account created",
-      description: "Vero must approve your company before you can generate codes.",
+      title: "Welcome",
+      description: "Your manufacturer dashboard is ready.",
     });
-    navigate("/app", { replace: true });
+    navigate(homeFor(result.session), { replace: true });
   };
 
   return (
-    <div className="min-h-screen dash-mesh flex items-center justify-center px-6 py-16 relative">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="w-full max-w-md">
-        <Link to="/login" className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground mb-8 transition-colors">
-          <ArrowLeft className="w-3 h-3" />
-          Back to sign in
-        </Link>
-        <div className="bg-card border border-border rounded-lg p-8 shadow-soft">
-          <div className="flex items-center gap-2 mb-6">
-            <ShieldCheck className="h-4 w-4 text-primary" />
-            <span className="text-sm tracking-wide">Vero</span>
-          </div>
-          <h1 className="text-xl font-light tracking-tight">Register your company</h1>
-          <p className="text-xs text-muted-foreground mt-1 mb-6">
-            One primary action: apply as a manufacturer. Status starts as pending until an admin approves you.
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="company" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Company name
-              </Label>
-              <Input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Demo Pharma KE" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Your name
-              </Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Amina Otieno" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Work email
-              </Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.ke" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-[11px] uppercase tracking-wider font-normal text-muted-foreground">
-                Password
-              </Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" required />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full rounded-full text-[11px] uppercase tracking-wider font-normal">
-              {loading ? "Submitting..." : "Create account"}
-            </Button>
-          </form>
-          <p className="text-xs text-muted-foreground mt-6">
-            Already registered?{" "}
-            <Link to="/login" className="text-foreground underline underline-offset-4">
-              Sign in
-            </Link>
-          </p>
+    <AuthShell>
+      <h1 className="text-2xl font-light tracking-tight">Create an account</h1>
+      <p className="text-sm text-muted-foreground mt-1 mb-6">Create a manufacturer account and open your dashboard.</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Full name</Label>
+          <Input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Amina Otieno" required />
         </div>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.ke"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="company">Company</Label>
+          <Input
+            id="company"
+            autoComplete="organization"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            placeholder="Your company name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirm">Confirm password</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Repeat password"
+            required
+          />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full rounded-full">
+          {loading ? "Creating account..." : "Sign up"}
+        </Button>
+      </form>
+      <p className="text-sm text-muted-foreground mt-6">
+        Already have an account?{" "}
+        <Link to="/login" className="text-foreground underline underline-offset-4">
+          Log in
+        </Link>
+      </p>
+    </AuthShell>
   );
 };
 

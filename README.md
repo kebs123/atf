@@ -4,17 +4,21 @@
 
 Kebs is a product-authenticity and traceability system for African markets. A consumer sends a short SMS with a code printed on the pack. They get a reply in seconds: genuine, already used, recalled, or unknown. Manufacturers get a cheap way to protect brands. Retailers get a trusted shelf. Public health gets fewer fake medicines, adulterated foods, and dangerous cosmetics in people’s hands.
 
-This repository holds design documents and a **sample landing page** you can open in the browser.
+This repository holds design documents and a **Vite web app** that talks to the live Express API (SQLite stays on that server).
 
-To view the landing page:
+To run the frontend:
 
 ```bash
 cd apps/web
+cp .env.example .env
+# set VITE_API_BASE_URL to the Cloudflare tunnel / API origin
 npm install
 npm run dev
 ```
 
-Then open [http://127.0.0.1:5173](http://127.0.0.1:5173). Public pages: `/` (landing) and `/verify` (demo codes, no backend yet).
+Then open [http://127.0.0.1:5173](http://127.0.0.1:5173). Public verify: `/verify` → `POST /api/verify` `{ "code": "SGSP792F" }`.
+
+Cloudflare Pages: `cd apps/web && npm run build && npx wrangler pages deploy dist`.
 
 ---
 

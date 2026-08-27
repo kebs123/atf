@@ -7,13 +7,13 @@ import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <Navigation />
       <Hero />
       <Tagline />
       <HowItWorks />
       <Features />
-      <Footer />
+      <Footer headingLines={["VERO"]} />
     </div>
   );
 };

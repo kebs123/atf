@@ -3,21 +3,29 @@ import { motion } from "framer-motion";
 import { AppShell } from "@/components/dash/AppShell";
 import { AnalyticsBoard } from "@/components/dash/AnalyticsBoard";
 import { useAuth } from "@/hooks/use-auth";
+import { useLive } from "@/hooks/use-live";
 import { MANUFACTURER_NAV } from "@/lib/nav";
 import { categoryLabel } from "@/lib/categories";
-import { CHECKS_BY_DAY, MANUFACTURER_STATS, RECENT_VERIFICATIONS, resultClass, resultLabel } from "@/lib/demo-data";
+import { getStatsOverview, listVerifications } from "@/lib/api";
+import { resultClass, resultLabel } from "@/lib/results";
 
 const ManufacturerHome = () => {
   const session = useAuth();
+  const stats = useLive(getStatsOverview);
+  const recent = useLive(() => listVerifications(20));
+
   if (!session) return <Navigate to="/login" replace />;
 
+  const overview = stats.data;
   const cards = [
-    { label: "Products", value: MANUFACTURER_STATS.products, href: "/app/products" },
-    { label: "Active batches", value: MANUFACTURER_STATS.activeBatches, href: "/app/products" },
-    { label: "Codes issued", value: MANUFACTURER_STATS.codesIssued.toLocaleString() },
-    { label: "Checks this week", value: MANUFACTURER_STATS.checksThisWeek.toLocaleString() },
-    { label: "Open alerts", value: MANUFACTURER_STATS.openAlerts, href: "/app/alerts" },
+    { label: "Products", value: overview?.products ?? "—", href: "/app/products" },
+    { label: "Active batches", value: overview?.activeBatches ?? "—", href: "/app/products" },
+    { label: "Codes issued", value: overview ? overview.codesIssued.toLocaleString() : "—" },
+    { label: "Checks this week", value: overview ? overview.checksThisWeek.toLocaleString() : "—" },
+    { label: "Open alerts", value: overview?.openAlerts ?? "—", href: "/app/alerts" },
+    { label: "Open reports", value: overview?.openReports ?? "—", href: "/app/reports" },
   ];
+  const rows = recent.data ?? [];
 
   return (
     <AppShell session={session} items={MANUFACTURER_NAV}>
@@ -31,8 +39,11 @@ const ManufacturerHome = () => {
         </div>
         <h1 className="text-3xl font-light tracking-tight">{session.companyName}</h1>
         <p className="text-sm text-muted-foreground mt-1">Category mix, checks, and alerts — scoped to you.</p>
+        {(stats.error || recent.error) && (
+          <p className="text-sm text-destructive mt-4">{stats.error || recent.error}</p>
+        )}
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-8">
           {cards.map((card, i) => {
             const inner = (
               <motion.div
@@ -55,7 +66,7 @@ const ManufacturerHome = () => {
           })}
         </div>
 
-        <AnalyticsBoard series={CHECKS_BY_DAY} title="Checks by category" />
+        {overview?.series?.length ? <AnalyticsBoard series={overview.series} title="Checks by category" /> : null}
 
         <h2 className="text-sm font-medium mt-10 mb-3">Recent verifications</h2>
         <div className="bg-card/80 border border-border rounded-2xl overflow-hidden">
@@ -71,8 +82,22 @@ const ManufacturerHome = () => {
               </tr>
             </thead>
             <tbody>
-              {RECENT_VERIFICATIONS.map((row) => (
-                <tr key={row.code} className="border-t border-border">
+              {recent.loading && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={6}>
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {!recent.loading && rows.length === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={6}>
+                    No checks yet.
+                  </td>
+                </tr>
+              )}
+              {rows.map((row) => (
+                <tr key={row.id} className="border-t border-border">
                   <td className="px-4 py-3 font-mono text-xs">{row.code}</td>
                   <td className="px-4 py-3">{row.product}</td>
                   <td className="px-4 py-3 text-muted-foreground">{categoryLabel(row.category)}</td>
