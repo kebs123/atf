@@ -82,6 +82,18 @@ export function localLogin(email: string, password: string): Session | null {
   };
 }
 
+export function localPreviewSession(email = "", role: Role = "manufacturer"): Session {
+  const trimmed = email.trim().toLowerCase();
+  const isAdmin = role === "admin" || trimmed.startsWith("admin@");
+  return {
+    email: trimmed || (isAdmin ? "admin@local" : "preview@local"),
+    name: isAdmin ? "Admin" : trimmed.split("@")[0] || "Preview",
+    role: isAdmin ? "admin" : "manufacturer",
+    companyName: isAdmin ? undefined : "Local preview",
+    companyStatus: "approved",
+  };
+}
+
 export function getSession(): Session | null {
   try {
     if (!getToken()) {

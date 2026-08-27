@@ -3,6 +3,31 @@ import { asCategory, asResult, emptyCategoryValues, type ResultCode } from "@/li
 import { hasCoords, type GeoCheck, type GeoPoint, type Shipment, type ShipmentStatus } from "@/lib/trace";
 import type { CategoryId } from "@/lib/categories";
 import { clearAuth, getToken, isLocalToken, type CompanyStatus, type Role, type Session } from "@/lib/auth-store";
+import {
+  backupAlerts,
+  backupCodesCsv,
+  backupCompanies,
+  backupCreateBatch,
+  backupCreateProduct,
+  backupFlags,
+  backupGenerateCodes,
+  backupGetBatch,
+  backupGetProduct,
+  backupGetShipment,
+  backupListProducts,
+  backupPatchReport,
+  backupRecallBatch,
+  backupReports,
+  backupSetCompanyStatus,
+  backupShipments,
+  backupStats,
+  backupSubmitReport,
+  backupVerifications,
+  backupVerify,
+  markOriginDown,
+  markOriginUp,
+  shouldSkipLive,
+} from "@/lib/backup";
 
 export class ApiError extends Error {
   status: number;
@@ -26,6 +51,26 @@ export function userMessage(err: unknown): string {
     return err.message || "Something went wrong.";
   }
   return "Cannot reach Vero. Try SMS if you have signal.";
+}
+
+export function isTunnelError(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return true;
+  return err.status === 0 || err.status >= 500;
+}
+
+async function liveOrBackup<T>(live: () => Promise<T>, backup: () => T): Promise<T> {
+  if (shouldSkipLive()) return backup();
+  try {
+    const value = await live();
+    markOriginUp();
+    return value;
+  } catch (err) {
+    if (isTunnelError(err)) {
+      markOriginDown();
+      return backup();
+    }
+    throw err;
+  }
 }
 
 function unwrap(data: unknown): unknown {
@@ -84,7 +129,10 @@ export async function apiFetch<T = unknown>(
   if (rest.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (auth) {
     const token = getToken();
-    if (token && !isLocalToken(token)) headers.set("Authorization", `Bearer ${token}`);
+    if (isLocalToken(token)) {
+      throw new ApiError(503, "Working offline. The API tunnel is down.");
+    }
+    if (token) headers.set("Authorization", `Bearer ${token}`);
   }
   let res: Response;
   try {
@@ -141,33 +189,35 @@ export type VerifyOutcome = {
 };
 
 export async function verifyCode(code: string): Promise<VerifyOutcome> {
-  const json = await apiFetch<unknown>("/api/verify", {
-    method: "POST",
-    auth: false,
-    body: JSON.stringify({ code }),
-  });
-  const root = rec(json);
-  const inner = rec(unwrap(json));
-  const o = Object.keys(inner).length ? inner : root;
-  const product = nested(o, "product");
-  const company = nested(o, "company");
-  const manufacturer = nested(o, "manufacturer");
-  const batch = nested(o, "batch");
-  const resultRaw = o.result ?? o.status ?? o.outcome ?? root.result;
-  return {
-    code: str(o, "code", "verification_code") || code.toUpperCase(),
-    result: asResult(typeof resultRaw === "object" ? rec(resultRaw).code ?? rec(resultRaw).status : resultRaw),
-    productName: str(o, "productName", "product_name", "name") || str(product, "name", "title") || "—",
-    manufacturer:
-      str(o, "manufacturer", "manufacturerName", "company", "company_name") ||
-      str(manufacturer, "name") ||
-      str(company, "name") ||
-      "—",
-    batch: str(o, "batchNumber", "batch", "lot", "batch_code") || str(batch, "lot", "code", "name") || "—",
-    expiry: str(o, "expiresAt", "expiry", "expires_at", "expiry_date") || str(batch, "expires_at", "expiry") || "",
-    firstVerifiedAt: str(o, "firstVerifiedAt", "first_verified_at", "first_check_at", "checked_at") || "",
-    message: str(o, "message"),
-  };
+  return liveOrBackup(async () => {
+    const json = await apiFetch<unknown>("/api/verify", {
+      method: "POST",
+      auth: false,
+      body: JSON.stringify({ code }),
+    });
+    const root = rec(json);
+    const inner = rec(unwrap(json));
+    const o = Object.keys(inner).length ? inner : root;
+    const product = nested(o, "product");
+    const company = nested(o, "company");
+    const manufacturer = nested(o, "manufacturer");
+    const batch = nested(o, "batch");
+    const resultRaw = o.result ?? o.status ?? o.outcome ?? root.result;
+    return {
+      code: str(o, "code", "verification_code") || code.toUpperCase(),
+      result: asResult(typeof resultRaw === "object" ? rec(resultRaw).code ?? rec(resultRaw).status : resultRaw),
+      productName: str(o, "productName", "product_name", "name") || str(product, "name", "title") || "—",
+      manufacturer:
+        str(o, "manufacturer", "manufacturerName", "company", "company_name") ||
+        str(manufacturer, "name") ||
+        str(company, "name") ||
+        "—",
+      batch: str(o, "batchNumber", "batch", "lot", "batch_code") || str(batch, "lot", "code", "name") || "—",
+      expiry: str(o, "expiresAt", "expiry", "expires_at", "expiry_date") || str(batch, "expires_at", "expiry") || "",
+      firstVerifiedAt: str(o, "firstVerifiedAt", "first_verified_at", "first_check_at", "checked_at") || "",
+      message: str(o, "message"),
+    };
+  }, () => backupVerify(code));
 }
 
 export type ReportStatus = "open" | "reviewing" | "closed";
@@ -206,18 +256,20 @@ function asReport(row: unknown): CounterfeitReport {
 }
 
 export async function submitReport(input: { code: string; note: string; place: string; contact: string }) {
-  const json = await apiFetch("/api/reports", {
-    method: "POST",
-    auth: false,
-    body: JSON.stringify({
-      code: input.code,
-      note: input.note,
-      place: input.place,
-      contact: input.contact,
-      channel: "web",
-    }),
-  });
-  return asReport(unwrap(json) ?? json);
+  return liveOrBackup(async () => {
+    const json = await apiFetch("/api/reports", {
+      method: "POST",
+      auth: false,
+      body: JSON.stringify({
+        code: input.code,
+        note: input.note,
+        place: input.place,
+        contact: input.contact,
+        channel: "web",
+      }),
+    });
+    return asReport(unwrap(json) ?? json);
+  }, () => backupSubmitReport(input));
 }
 
 export type AuthPayload = { token: string; session: Session };
@@ -254,7 +306,7 @@ function parseAuth(json: unknown): AuthPayload {
   return { token, session };
 }
 
-const AUTH_TIMEOUT_MS = 8000;
+const AUTH_TIMEOUT_MS = 3000;
 
 export async function loginRequest(email: string, password: string): Promise<AuthPayload> {
   return parseAuth(
@@ -346,72 +398,113 @@ function asBatch(row: unknown, productId = ""): BatchRow {
 }
 
 export async function listProducts(): Promise<ProductRow[]> {
-  const json = await apiFetch("/api/products");
-  return asList(unwrap(json) ?? json).map(asProduct);
+  return liveOrBackup(async () => {
+    const json = await apiFetch("/api/products");
+    return asList(unwrap(json) ?? json).map(asProduct);
+  }, backupListProducts);
 }
 
 export async function createProduct(input: { name: string; sku: string; category: CategoryId }) {
-  const json = await apiFetch("/api/products", { method: "POST", body: JSON.stringify(input) });
-  return asProduct(unwrap(json) ?? json);
+  return liveOrBackup(async () => {
+    const json = await apiFetch("/api/products", { method: "POST", body: JSON.stringify(input) });
+    return asProduct(unwrap(json) ?? json);
+  }, () => backupCreateProduct(input));
 }
 
 export async function getProduct(id: string): Promise<{ product: ProductRow; batches: BatchRow[] }> {
-  const json = await apiFetch(`/api/products/${id}`);
-  const data = unwrap(json) ?? json;
-  const o = rec(data);
-  const product = asProduct(Object.keys(nested(o, "product")).length ? o.product : data);
-  let batches = asList(o.batches).map((b) => asBatch(b, id));
-  if (!batches.length) {
-    const alt = await apiFetchOptional(`/api/products/${id}/batches`);
-    if (alt) batches = asList(unwrap(alt) ?? alt).map((b) => asBatch(b, id));
-  }
-  return { product, batches };
+  return liveOrBackup(
+    async () => {
+      const json = await apiFetch(`/api/products/${id}`);
+      const data = unwrap(json) ?? json;
+      const o = rec(data);
+      const product = asProduct(Object.keys(nested(o, "product")).length ? o.product : data);
+      let batches = asList(o.batches).map((b) => asBatch(b, id));
+      if (!batches.length) {
+        const alt = await apiFetchOptional(`/api/products/${id}/batches`);
+        if (alt) batches = asList(unwrap(alt) ?? alt).map((b) => asBatch(b, id));
+      }
+      return { product, batches };
+    },
+    () => {
+      const found = backupGetProduct(id);
+      if (!found) throw new ApiError(404, "Not found.");
+      return found;
+    },
+  );
 }
 
 export async function createBatch(input: { productId: string; lot: string; quantity: number; expiresAt: string }) {
-  const json = await apiFetch("/api/batches", {
-    method: "POST",
-    body: JSON.stringify({
-      product_id: input.productId,
-      productId: input.productId,
-      lot: input.lot,
-      quantity: input.quantity,
-      expires_at: input.expiresAt,
-    }),
-  });
-  return asBatch(unwrap(json) ?? json, input.productId);
+  return liveOrBackup(async () => {
+    const json = await apiFetch("/api/batches", {
+      method: "POST",
+      body: JSON.stringify({
+        product_id: input.productId,
+        productId: input.productId,
+        lot: input.lot,
+        quantity: input.quantity,
+        expires_at: input.expiresAt,
+      }),
+    });
+    return asBatch(unwrap(json) ?? json, input.productId);
+  }, () => backupCreateBatch(input));
 }
 
 export async function getBatch(id: string): Promise<BatchRow> {
-  const json = await apiFetch(`/api/batches/${id}`);
-  const data = unwrap(json) ?? json;
-  const o = rec(data);
-  return asBatch(Object.keys(nested(o, "batch")).length ? o.batch : data);
+  return liveOrBackup(
+    async () => {
+      const json = await apiFetch(`/api/batches/${id}`);
+      const data = unwrap(json) ?? json;
+      const o = rec(data);
+      return asBatch(Object.keys(nested(o, "batch")).length ? o.batch : data);
+    },
+    () => {
+      const found = backupGetBatch(id);
+      if (!found) throw new ApiError(404, "Not found.");
+      return found;
+    },
+  );
 }
 
 export async function generateCodes(batchId: string) {
-  return apiFetch(`/api/batches/${batchId}/codes`, { method: "POST", body: JSON.stringify({}) });
+  return liveOrBackup(
+    () => apiFetch(`/api/batches/${batchId}/codes`, { method: "POST", body: JSON.stringify({}) }),
+    () => backupGenerateCodes(batchId),
+  );
 }
 
 export async function recallBatch(batchId: string) {
-  return apiFetch(`/api/batches/${batchId}/recall`, { method: "POST", body: JSON.stringify({}) });
+  return liveOrBackup(
+    () => apiFetch(`/api/batches/${batchId}/recall`, { method: "POST", body: JSON.stringify({}) }),
+    () => backupRecallBatch(batchId),
+  );
 }
 
-export async function downloadCodesCsv(batchId: string) {
-  const res = await fetch(`${apiRoot()}/api/batches/${batchId}/codes.csv`, {
-    headers: {
-      Authorization: getToken() ? `Bearer ${getToken()}` : "",
-      Accept: "text/csv",
-    },
-  });
-  if (!res.ok) throw new ApiError(res.status, "Could not export CSV.");
-  const blob = await res.blob();
+function downloadBlob(filename: string, contents: Blob | string) {
+  const blob = typeof contents === "string" ? new Blob([contents], { type: "text/csv" }) : contents;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `batch-${batchId}-codes.csv`;
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function downloadCodesCsv(batchId: string) {
+  return liveOrBackup(
+    async () => {
+      const res = await fetch(`${apiRoot()}/api/batches/${batchId}/codes.csv`, {
+        headers: {
+          Authorization: getToken() ? `Bearer ${getToken()}` : "",
+          Accept: "text/csv",
+        },
+      });
+      if (!res.ok) throw new ApiError(res.status, "Could not export CSV.");
+      downloadBlob(`batch-${batchId}-codes.csv`, await res.blob());
+    },
+    () => {
+      downloadBlob(`batch-${batchId}-codes.csv`, backupCodesCsv(batchId));
+    },
+  );
 }
 
 export type StatsOverview = {
@@ -442,21 +535,23 @@ function asSeries(raw: unknown): { day: string; values: Record<CategoryId, numbe
 }
 
 export async function getStatsOverview(): Promise<StatsOverview> {
-  const json = (await apiFetchOptional("/api/stats/overview")) ?? {};
-  const o = rec(unwrap(json) ?? json);
-  return {
-    products: num(o, "products", "product_count"),
-    activeBatches: num(o, "activeBatches", "active_batches", "batches"),
-    codesIssued: num(o, "codesIssued", "codes_issued", "units"),
-    checksThisWeek: num(o, "checksThisWeek", "checks_this_week", "checks"),
-    openAlerts: num(o, "openAlerts", "open_alerts", "alerts"),
-    openReports: num(o, "openReports", "open_reports", "reports"),
-    pendingCompanies: num(o, "pendingCompanies", "pending_companies"),
-    approvedCompanies: num(o, "approvedCompanies", "approved_companies"),
-    flagsOpen: num(o, "flagsOpen", "flags_open", "flags"),
-    checksToday: num(o, "checksToday", "checks_today"),
-    series: asSeries(o.checks_by_day ?? o.checksByDay ?? o.series ?? o.by_category),
-  };
+  return liveOrBackup(async () => {
+    const json = (await apiFetchOptional("/api/stats/overview")) ?? {};
+    const o = rec(unwrap(json) ?? json);
+    return {
+      products: num(o, "products", "product_count"),
+      activeBatches: num(o, "activeBatches", "active_batches", "batches"),
+      codesIssued: num(o, "codesIssued", "codes_issued", "units"),
+      checksThisWeek: num(o, "checksThisWeek", "checks_this_week", "checks"),
+      openAlerts: num(o, "openAlerts", "open_alerts", "alerts"),
+      openReports: num(o, "openReports", "open_reports", "reports"),
+      pendingCompanies: num(o, "pendingCompanies", "pending_companies"),
+      approvedCompanies: num(o, "approvedCompanies", "approved_companies"),
+      flagsOpen: num(o, "flagsOpen", "flags_open", "flags"),
+      checksToday: num(o, "checksToday", "checks_today"),
+      series: asSeries(o.checks_by_day ?? o.checksByDay ?? o.series ?? o.by_category),
+    };
+  }, backupStats);
 }
 
 export type VerificationRow = {
@@ -505,17 +600,21 @@ function asVerification(row: unknown): VerificationRow {
 }
 
 export async function listVerifications(limit = 50): Promise<VerificationRow[]> {
-  const json = await apiFetch(`/api/verifications?limit=${limit}`);
-  return asList(unwrap(json) ?? json).map(asVerification);
+  return liveOrBackup(async () => {
+    const json = await apiFetch(`/api/verifications?limit=${limit}`);
+    return asList(unwrap(json) ?? json).map(asVerification);
+  }, () => backupVerifications(limit));
 }
 
 export async function listAdminVerifications(q = ""): Promise<VerificationRow[]> {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
-  const json =
-    (await apiFetchOptional(`/api/admin/verifications${qs}`)) ??
-    (await apiFetchOptional(`/api/verifications${qs}`)) ??
-    [];
-  return asList(unwrap(json) ?? json).map(asVerification);
+  return liveOrBackup(async () => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    const json =
+      (await apiFetchOptional(`/api/admin/verifications${qs}`)) ??
+      (await apiFetchOptional(`/api/verifications${qs}`)) ??
+      [];
+    return asList(unwrap(json) ?? json).map(asVerification);
+  }, () => backupVerifications(50, q));
 }
 
 export type AlertRow = {
@@ -540,8 +639,10 @@ function asAlert(row: unknown): AlertRow {
 }
 
 export async function listAlerts(): Promise<AlertRow[]> {
-  const json = (await apiFetchOptional("/api/alerts")) ?? [];
-  return asList(unwrap(json) ?? json).map(asAlert);
+  return liveOrBackup(async () => {
+    const json = (await apiFetchOptional("/api/alerts")) ?? [];
+    return asList(unwrap(json) ?? json).map(asAlert);
+  }, backupAlerts);
 }
 
 export type CompanyRow = {
@@ -566,16 +667,24 @@ function asCompany(row: unknown): CompanyRow {
 }
 
 export async function listCompanies(): Promise<CompanyRow[]> {
-  const json = await apiFetch("/api/admin/companies");
-  return asList(unwrap(json) ?? json).map(asCompany);
+  return liveOrBackup(async () => {
+    const json = await apiFetch("/api/admin/companies");
+    return asList(unwrap(json) ?? json).map(asCompany);
+  }, backupCompanies);
 }
 
 export async function approveCompany(id: string) {
-  return apiFetch(`/api/admin/companies/${id}/approve`, { method: "POST", body: JSON.stringify({}) });
+  return liveOrBackup(
+    () => apiFetch(`/api/admin/companies/${id}/approve`, { method: "POST", body: JSON.stringify({}) }),
+    () => backupSetCompanyStatus(id, "approved"),
+  );
 }
 
 export async function suspendCompany(id: string) {
-  return apiFetch(`/api/admin/companies/${id}/suspend`, { method: "POST", body: JSON.stringify({}) });
+  return liveOrBackup(
+    () => apiFetch(`/api/admin/companies/${id}/suspend`, { method: "POST", body: JSON.stringify({}) }),
+    () => backupSetCompanyStatus(id, "suspended"),
+  );
 }
 
 export type FlagRow = {
@@ -600,26 +709,35 @@ function asFlag(row: unknown): FlagRow {
 }
 
 export async function listFlags(): Promise<FlagRow[]> {
-  const json = (await apiFetchOptional("/api/admin/flags")) ?? (await apiFetchOptional("/api/alerts")) ?? [];
-  return asList(unwrap(json) ?? json).map(asFlag);
+  return liveOrBackup(async () => {
+    const json = (await apiFetchOptional("/api/admin/flags")) ?? (await apiFetchOptional("/api/alerts")) ?? [];
+    return asList(unwrap(json) ?? json).map(asFlag);
+  }, backupFlags);
 }
 
 export async function listReports(scope?: "admin" | "company"): Promise<CounterfeitReport[]> {
-  const path = scope === "admin" ? "/api/admin/reports" : "/api/reports";
-  const json = (await apiFetchOptional(path)) ?? [];
-  return asList(unwrap(json) ?? json).map(asReport);
+  return liveOrBackup(async () => {
+    const path = scope === "admin" ? "/api/admin/reports" : "/api/reports";
+    const json = (await apiFetchOptional(path)) ?? [];
+    return asList(unwrap(json) ?? json).map(asReport);
+  }, backupReports);
 }
 
 export async function patchReportStatus(id: string, status: ReportStatus) {
-  try {
-    await apiFetch(`/api/reports/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) {
-      await apiFetch(`/api/admin/reports/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
-      return;
-    }
-    throw err;
-  }
+  return liveOrBackup(
+    async () => {
+      try {
+        await apiFetch(`/api/reports/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          await apiFetch(`/api/admin/reports/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+          return;
+        }
+        throw err;
+      }
+    },
+    () => backupPatchReport(id, status),
+  );
 }
 
 function asPoint(row: unknown, fallbackName = ""): GeoPoint | null {
@@ -658,14 +776,18 @@ function asShipment(row: unknown): Shipment | null {
 }
 
 export async function listShipments(): Promise<Shipment[]> {
-  const json = (await apiFetchOptional("/api/shipments")) ?? (await apiFetchOptional("/api/custody")) ?? [];
-  return asList(unwrap(json) ?? json).map(asShipment).filter((s): s is Shipment => Boolean(s));
+  return liveOrBackup(async () => {
+    const json = (await apiFetchOptional("/api/shipments")) ?? (await apiFetchOptional("/api/custody")) ?? [];
+    return asList(unwrap(json) ?? json).map(asShipment).filter((s): s is Shipment => Boolean(s));
+  }, backupShipments);
 }
 
 export async function getShipment(id: string): Promise<Shipment | null> {
-  const json = await apiFetchOptional(`/api/shipments/${id}`);
-  if (!json) return null;
-  return asShipment(unwrap(json) ?? json);
+  return liveOrBackup(async () => {
+    const json = await apiFetchOptional(`/api/shipments/${id}`);
+    if (!json) return null;
+    return asShipment(unwrap(json) ?? json);
+  }, () => backupGetShipment(id));
 }
 
 export function verificationsToGeo(rows: VerificationRow[]): GeoCheck[] {

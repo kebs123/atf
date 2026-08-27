@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { homeFor, login } from "@/lib/auth";
+import { enterLocalDashboard, homeFor, login, type Session } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +18,10 @@ const Login = () => {
 
   if (session) return <Navigate to={homeFor(session)} replace />;
 
+  const go = (next: Session) => {
+    navigate(homeFor(next), { replace: true });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -27,13 +31,15 @@ const Login = () => {
       toast({ title: "Could not sign in", description: result.message, variant: "destructive" });
       return;
     }
-    navigate(homeFor(result.session), { replace: true });
+    go(result.session);
   };
 
   return (
     <AuthShell>
       <h1 className="text-2xl font-light tracking-tight">Log in</h1>
-      <p className="text-sm text-muted-foreground mt-1 mb-6">Use the email and password registered with Vero.</p>
+      <p className="text-sm text-muted-foreground mt-1 mb-6">
+        Use the email and password registered with Vero. If the API tunnel is down, you still open a local backup dashboard.
+      </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -63,6 +69,14 @@ const Login = () => {
           {loading ? "Signing in..." : "Log in"}
         </Button>
       </form>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full rounded-full mt-3"
+        onClick={() => go(enterLocalDashboard(email))}
+      >
+        Open local backup
+      </Button>
       <p className="text-sm text-muted-foreground mt-6">
         New here?{" "}
         <Link to="/signup" className="text-foreground underline underline-offset-4">

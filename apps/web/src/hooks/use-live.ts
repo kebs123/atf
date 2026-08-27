@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { userMessage } from "@/lib/api";
-import { getToken, isLocalToken } from "@/lib/auth-store";
 
 export function useLive<T>(loader: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
@@ -12,12 +11,6 @@ export function useLive<T>(loader: () => Promise<T>, deps: unknown[] = []) {
 
   useEffect(() => {
     let cancelled = false;
-    if (isLocalToken(getToken())) {
-      setData(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     loader()
       .then((value) => {

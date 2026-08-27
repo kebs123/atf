@@ -1,6 +1,30 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import type { ProxyOptions } from "vite";
+import type { ServerResponse } from "http";
+
+function tunnelProxy(apiOrigin: string): ProxyOptions {
+  const closed = JSON.stringify({ error: "Cannot reach Vero. The API tunnel is down." });
+  return {
+    target: apiOrigin,
+    changeOrigin: true,
+    secure: true,
+    timeout: 4000,
+    configure(proxy) {
+      proxy.on("error", (_err, _req, res) => {
+        const response = res as ServerResponse;
+        if (response && typeof response.writeHead === "function" && !response.headersSent) {
+          response.writeHead(502, { "Content-Type": "application/json" });
+          response.end(closed);
+        }
+      });
+      proxy.on("proxyRes", (proxyRes) => {
+        if (proxyRes.statusCode === 530) proxyRes.statusCode = 502;
+      });
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -12,8 +36,8 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: apiOrigin
         ? {
-            "/api": { target: apiOrigin, changeOrigin: true, secure: true, timeout: 8000 },
-            "/health": { target: apiOrigin, changeOrigin: true, secure: true, timeout: 8000 },
+            "/api": tunnelProxy(apiOrigin),
+            "/health": tunnelProxy(apiOrigin),
           }
         : undefined,
     },

@@ -1,9 +1,11 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ShieldCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { logout, type Session } from "@/lib/auth";
+import { usingBackup } from "@/lib/backup";
 import { cn } from "@/lib/utils";
 
 type Item = { to: string; label: string; end?: boolean };
@@ -19,6 +21,18 @@ export function AppShell({
 }) {
   const navigate = useNavigate();
   const pending = session.role === "manufacturer" && session.companyStatus === "pending";
+  const [backup, setBackup] = useState(() => usingBackup());
+
+  useEffect(() => {
+    const sync = () => setBackup(usingBackup());
+    sync();
+    window.addEventListener("vero-origin", sync);
+    window.addEventListener("vero-auth", sync);
+    return () => {
+      window.removeEventListener("vero-origin", sync);
+      window.removeEventListener("vero-auth", sync);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen dash-mesh flex">
@@ -90,6 +104,11 @@ export function AppShell({
             </Button>
           </div>
         </header>
+        {backup && (
+          <div className="mx-4 mt-4 md:mx-8 md:mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+            Local backup is on. The live API tunnel is down, so this browser is using stored data until Vero is reachable again.
+          </div>
+        )}
         {pending && (
           <div className="mx-4 mt-4 md:mx-8 md:mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
             {session.companyName} is waiting for Vero approval. You can look around, but you cannot generate codes yet.
