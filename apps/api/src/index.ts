@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     console.log(`Kebs API listening on http://localhost:${env.port}`);
     if (env.publicApiUrl) {
       console.log(`Public URL: ${env.publicApiUrl}`);
-      console.log(`SMS webhook: ${env.publicApiUrl}/webhooks/sms`);
+      console.log(`SMS webhook: ${env.publicApiUrl}/api/webhooks/sms`);
     }
   });
 }

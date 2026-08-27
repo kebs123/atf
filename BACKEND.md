@@ -272,7 +272,7 @@ Password hashed (e.g. bcrypt/argon2). Default role `manufacturer`, `company.stat
 
 Never put these in Next.js public env.
 
-**Where they are read from:** `apps/api/.env` first, then the repo-root `.env` as a shared fallback (per-app values win). Paths are resolved relative to `apps/api`, not the shell's cwd, so `npm run dev` behaves the same from the repo root or from `apps/api`.
+**Where they are read from:** `apps/api/.env` first, then the repo-root `.env` as a shared fallback (per-app values win). Paths are resolved relative to `apps/api`, not the shell's cwd, so `npm run dev` behaves the same wherever it is started from.
 
 ---
 
@@ -286,9 +286,9 @@ npm run dev:tunnel      # tunnel + server
 npm run tunnel          # tunnel only (server already running elsewhere)
 ```
 
-Both work from the repo root too (`npm run dev:tunnel`) — the root package is an npm workspace that forwards to `@atf/api`.
+Run these from `apps/api`: each app keeps its own `package.json` and lockfile, so there are no root-level scripts.
 
-It prints a banner with the public URL, `…/webhooks/sms` (paste into the Africa's Talking callback field), `…/verify`, and `…/health`, and passes `PUBLIC_API_URL` (shown in the server's startup log) plus `TRUST_PROXY=1` (so per-IP rate limits see the real client IP, not the tunnel's `127.0.0.1`) to the server.
+It prints a banner with the public URL, `…/api/webhooks/sms` (paste into the Africa's Talking callback field), `…/api/verify`, and `…/health`, and passes `PUBLIC_API_URL` (shown in the server's startup log) plus `TRUST_PROXY=1` (so per-IP rate limits see the real client IP, not the tunnel's `127.0.0.1`) to the server.
 
 | Setting | Meaning |
 | --- | --- |

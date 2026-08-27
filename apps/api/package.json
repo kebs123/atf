@@ -1,5 +1,5 @@
 {
-  "name": "@atf/api",
+  "name": "atf",
   "version": "0.1.0",
   "private": true,
   "description": "Kebs product authenticity API",

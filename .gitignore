@@ -9,6 +9,10 @@ node_modules
 dist
 build
 
+# Stray artifacts from running prisma/node at the repo root instead of apps/api
+/data
+/src/generated
+
 # Logs
 *.log
 npm-debug.log*

@@ -31,6 +31,8 @@ const requested = (value("provider") ?? process.env.TUNNEL_PROVIDER ?? "auto").t
 const URL_TIMEOUT_MS = 45_000;
 
 const isWin = process.platform === "win32";
+// Routes live under /api (app.ts mounts apiRouter there).
+const API_PREFIX = "/api";
 const children = [];
 
 function has(bin) {
@@ -172,8 +174,9 @@ function banner(provider, url) {
     ["provider", provider],
     ["public URL", url],
     ["local URL", `http://localhost:${port}`],
-    ["SMS webhook", `${url}/webhooks/sms`],
-    ["verify", `${url}/verify`],
+    ["SMS webhook", `${url}${API_PREFIX}/webhooks/sms`],
+    ["verify", `${url}${API_PREFIX}/verify`],
+    // /health is mounted outside the API router.
     ["health", `${url}/health`],
   ];
   const width = Math.max(...rows.map(([, v]) => v.length)) + 15;
@@ -197,7 +200,7 @@ function startServer(url) {
       env: {
         ...process.env,
         PUBLIC_API_URL: url,
-        SMS_WEBHOOK_URL: `${url}/webhooks/sms`,
+        SMS_WEBHOOK_URL: `${url}${API_PREFIX}/webhooks/sms`,
         // The tunnel is one trusted hop, so per-IP rate limits see the real client IP.
         TRUST_PROXY: process.env.TRUST_PROXY ?? "1",
       },
